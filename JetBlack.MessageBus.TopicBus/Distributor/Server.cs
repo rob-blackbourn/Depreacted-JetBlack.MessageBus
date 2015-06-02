@@ -1,0 +1,26 @@
+﻿using System;
+using System.Net;
+using System.Threading;
+using log4net;
+
+namespace JetBlack.MessageBus.TopicBus.Distributor
+{
+    public class Server : IDisposable
+    {
+        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        readonly Market _market;
+
+        public Server(IPEndPoint endPoint, CancellationToken token)
+        {
+            Log.Info("Starting server");
+
+            _market = new Market(new Acceptor().ToObservable(endPoint, token));
+        }
+
+        public void Dispose()
+        {
+            _market.Dispose();
+        }
+    }
+}
