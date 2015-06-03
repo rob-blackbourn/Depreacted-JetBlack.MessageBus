@@ -58,11 +58,8 @@
     <Compile Include="Diagnostics\Log4NetExtensions.cs" />
     <Compile Include="DisposableValue.cs" />
     <Compile Include="IO\BufferedMemoryStream.cs" />
-    <Compile Include="IO\FrameStream.cs" />
     <Compile Include="IO\IByteEncoder.cs" />
     <Compile Include="IO\StreamExtensions.cs" />
-    <Compile Include="IO\StreamObservables.cs" />
-    <Compile Include="IO\StreamObservers.cs" />
     <Compile Include="Network\ClientExtensions.cs" />
     <Compile Include="Network\ConnectExtensions.cs" />
     <Compile Include="Network\FrameClientExtensions.cs" />
