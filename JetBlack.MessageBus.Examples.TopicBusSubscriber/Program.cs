@@ -29,13 +29,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
                     {
                         var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), TaskPoolScheduler.Default, cts.Token);
                         client.OnDataReceived += OnDataReceived;
-                        //Log.InfoFormat("Subscribing: LSE.VOD");
                         client.AddSubscription("LSE.VOD");
-                        //Log.InfoFormat("Subscribing: LSE.TSCO");
                         client.AddSubscription("LSE.TSCO");
-                        //Log.InfoFormat("Subscribing: LSE.FOOBAR");
                         client.AddSubscription("LSE.FOOBAR");
-                        //client.AddSubscription("VTX.BAY");
                     });
 
             // Wait to exit.

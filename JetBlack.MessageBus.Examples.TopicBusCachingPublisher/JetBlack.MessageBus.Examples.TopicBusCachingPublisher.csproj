@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0B635550-7457-4C7E-B8AE-1C2BC24891C0}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{E428961F-228B-4BEF-9DBC-BBD60964036E}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>JetBlack.MessageBus.TopicBus</RootNamespace>
-    <AssemblyName>JetBlack.MessageBus.TopicBus</AssemblyName>
+    <RootNamespace>JetBlack.MessageBus.Examples.TopicBusCachingPublisher</RootNamespace>
+    <AssemblyName>JetBlack.MessageBus.Examples.TopicBusCachingPublisher</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -32,6 +34,10 @@
   <ItemGroup>
     <Reference Include="log4net">
       <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -55,42 +61,30 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Adapters\CachingPublisher.cs" />
-    <Compile Include="Adapters\Client.cs" />
-    <Compile Include="Adapters\DataReceivedEventArgs.cs" />
-    <Compile Include="Adapters\ForwardedSubscriptionEventArgs.cs" />
-    <Compile Include="Distributor\Acceptor.cs" />
-    <Compile Include="Distributor\Interactor.cs" />
-    <Compile Include="Distributor\InteractorManager.cs" />
-    <Compile Include="Distributor\Market.cs" />
-    <Compile Include="Distributor\NotificationManager.cs" />
-    <Compile Include="Distributor\PublisherManager.cs" />
-    <Compile Include="Distributor\Server.cs" />
-    <Compile Include="Distributor\SourceMessage.cs" />
-    <Compile Include="Distributor\SourceSinkMessage.cs" />
-    <Compile Include="Distributor\SubscriptionManager.cs" />
-    <Compile Include="Messages\MessageExtensions.cs" />
-    <Compile Include="Messages\ForwardedSubscriptionRequest.cs" />
-    <Compile Include="Messages\Message.cs" />
-    <Compile Include="Messages\MessageType.cs" />
-    <Compile Include="Messages\MulticastData.cs" />
-    <Compile Include="Messages\NotificationRequest.cs" />
-    <Compile Include="Messages\SubscriptionRequest.cs" />
-    <Compile Include="Messages\UnicastData.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JetBlack.MessageBus.Common\JetBlack.MessageBus.Common.csproj">
       <Project>{8a5a252a-d66c-498f-8dfd-fd65c4f74d69}</Project>
       <Name>JetBlack.MessageBus.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\JetBlack.MessageBus.Json\JetBlack.MessageBus.Json.csproj">
+      <Project>{dc39775c-0471-4084-8d4a-0e4e32c30067}</Project>
+      <Name>JetBlack.MessageBus.Json</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\JetBlack.MessageBus.TopicBus\JetBlack.MessageBus.TopicBus.csproj">
+      <Project>{0b635550-7457-4c7e-b8ae-1c2bc24891c0}</Project>
+      <Name>JetBlack.MessageBus.TopicBus</Name>
+    </ProjectReference>
     <ProjectReference Include="..\JetBrains.Annotations\JetBrains.Annotations.csproj">
       <Project>{23f371ec-997b-4b32-8cd2-42111ded04b7}</Project>
       <Name>JetBrains.Annotations</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
