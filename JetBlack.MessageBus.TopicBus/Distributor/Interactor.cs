@@ -12,22 +12,22 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly TcpClient _tcpClient;
+        private readonly Socket _socket;
         public readonly int Id;
         readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
 
-        public Interactor(TcpClient tcpClient, int id, BufferManager bufferManager, CancellationToken token)
+        public Interactor(Socket socket, int id, BufferManager bufferManager, CancellationToken token)
         {
-            _tcpClient = tcpClient;
+            _socket = socket;
             Id = id;
             _bufferManager = bufferManager;
-            _messageObserver = tcpClient.ToMessageObserver(_bufferManager, token);
+            _messageObserver = socket.ToMessageObserver(_bufferManager, token);
         }
 
         public IObservable<Message> ToObservable()
         {
-            return _tcpClient.ToMessageObservable(_bufferManager);
+            return _socket.ToMessageObservable(_bufferManager);
         }
 
         public void SendMessage(Message message)
@@ -38,17 +38,17 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public IPEndPoint LocalEndPoint
         {
-            get { return (IPEndPoint)_tcpClient.Client.LocalEndPoint; }
+            get { return (IPEndPoint)_socket.LocalEndPoint; }
         }
 
         public IPEndPoint RemoteEndPoint
         {
-            get { return (IPEndPoint)_tcpClient.Client.RemoteEndPoint; }
+            get { return (IPEndPoint)_socket.RemoteEndPoint; }
         }
 
         public Socket Socket
         {
-            get { return _tcpClient.Client; }
+            get { return _socket; }
         }
 
         public override string ToString()
@@ -78,7 +78,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public void Dispose()
         {
-            _tcpClient.Close();
+            _socket.Close();
         }
     }
 }

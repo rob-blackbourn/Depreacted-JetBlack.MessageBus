@@ -17,12 +17,12 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         private readonly IByteEncoder<T> _byteEncoder;
         private readonly IObserver<Message> _messageObserver;
 
-        public Client(TcpClient tcpClient, IByteEncoder<T> byteEncoder, IScheduler scheduler, CancellationToken token)
+        public Client(Socket socket, IByteEncoder<T> byteEncoder, IScheduler scheduler, CancellationToken token)
         {
             _byteEncoder = byteEncoder;
             var bufferManager = BufferManager.CreateBufferManager(100, 100000);
-            tcpClient.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
-            _messageObserver = tcpClient.ToMessageObserver(bufferManager, token);
+            socket.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
+            _messageObserver = socket.ToMessageObserver(bufferManager, token);
         }
 
         private void Dispatch(Message message)

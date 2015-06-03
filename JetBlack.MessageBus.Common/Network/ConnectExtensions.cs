@@ -7,16 +7,16 @@ namespace JetBlack.MessageBus.Common.Network
 {
     public static class ConnectExtensions
     {
-        public static IObservable<TcpClient> ToConnectObservable(this IPEndPoint endpoint)
+        public static IObservable<Socket> ToConnectObservable(this IPEndPoint endpoint)
         {
-            return Observable.Create<TcpClient>(async (observer, token) =>
+            return Observable.Create<Socket>(async (observer, token) =>
             {
                 try
                 {
-                    var client = new TcpClient();
-                    await client.ConnectAsync(endpoint.Address, endpoint.Port);
+                    var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    await socket.ConnectAsync(endpoint);
                     token.ThrowIfCancellationRequested();
-                    observer.OnNext(client);
+                    observer.OnNext(socket);
                     observer.OnCompleted();
                 }
                 catch (Exception error)

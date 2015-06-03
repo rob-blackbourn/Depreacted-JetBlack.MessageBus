@@ -30,9 +30,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 
                 new IPEndPoint(IPAddress.Loopback, 9090)
                     .ToConnectObservable()
-                    .Subscribe(tcpClient =>
+                    .Subscribe(socket =>
                     {
-                        CreatePublisher(tcpClient, TaskPoolScheduler.Default, cts.Token);
+                        CreatePublisher(socket, TaskPoolScheduler.Default, cts.Token);
                     });
 
                 Console.WriteLine("Press <ENTER> to quit");
@@ -41,9 +41,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
                 cts.Cancel();
             }
 
-            static void CreatePublisher(TcpClient tcpClient, IScheduler publishScheduler, CancellationToken token)
+            static void CreatePublisher(Socket socket, IScheduler publishScheduler, CancellationToken token)
             {
-                var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), TaskPoolScheduler.Default, token);
+                var client = new Client<JObject>(socket, new JsonEncoder<JObject>(), TaskPoolScheduler.Default, token);
                 var cachingPublisher = new CachingPublisher<JObject, JToken>(client);
 
                 // Prepare the market data.

@@ -1,22 +1,22 @@
-﻿using System;
+﻿using JetBlack.MessageBus.Common;
+using JetBlack.MessageBus.Common.IO;
+using JetBlack.MessageBus.Common.Network;
+using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Reactive;
 using System.Reactive.Linq;
-using BufferManager = System.ServiceModel.Channels.BufferManager;
 using System.Threading;
-using JetBlack.MessageBus.Common.IO;
-using JetBlack.MessageBus.Common.Network;
-using JetBlack.MessageBus.Common;
+using BufferManager = System.ServiceModel.Channels.BufferManager;
 
 namespace JetBlack.MessageBus.TopicBus.Messages
 {
     public static class MessageExtensions
     {
-        public static IObservable<Message> ToMessageObservable(this TcpClient tcpClient, BufferManager bufferManager)
+        public static IObservable<Message> ToMessageObservable(this Socket socket, BufferManager bufferManager)
         {
             return Observable.Create<Message>(
-                observer => tcpClient.ToFrameClientObservable(bufferManager).Subscribe(
+                observer => socket.ToFrameClientObservable(SocketFlags.None, bufferManager).Subscribe(
                     disposableBuffer =>
                     {
                         using (var messageStream = new MemoryStream(disposableBuffer.Value.Array, disposableBuffer.Value.Offset, disposableBuffer.Value.Count, false, false))
@@ -30,9 +30,9 @@ namespace JetBlack.MessageBus.TopicBus.Messages
                     observer.OnCompleted));
         }
 
-        public static IObserver<Message> ToMessageObserver(this TcpClient tcpClient, BufferManager bufferManager, CancellationToken token)
+        public static IObserver<Message> ToMessageObserver(this Socket socket, BufferManager bufferManager, CancellationToken token)
         {
-            var socketObserver = tcpClient.ToFrameClientObserver(token);
+            var socketObserver = socket.ToFrameClientObserver(SocketFlags.None, token);
 
             return Observer.Create<Message>(message =>
             {

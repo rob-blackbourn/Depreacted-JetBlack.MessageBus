@@ -1,27 +1,70 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.ServiceModel.Channels;
 using System.Threading;
-using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.Common.Network
 {
-public static class FrameClientExtensions
+    public static class FrameClientExtensions
     {
-        public static ISubject<DisposableValue<ArraySegment<byte>>, DisposableValue<ArraySegment<byte>>> ToFrameClientSubject(this TcpClient client, BufferManager bufferManager, CancellationToken token)
+
+        public static ISubject<DisposableValue<ArraySegment<byte>>, DisposableValue<ArraySegment<byte>>> ToFrameClientSubject(this Socket socket, SocketFlags socketFlags, BufferManager bufferManager, CancellationToken token)
         {
-            return Subject.Create(client.ToFrameClientObserver(token), client.ToFrameClientObservable(bufferManager));
+            return Subject.Create(socket.ToFrameClientObserver(socketFlags, token), socket.ToFrameClientObservable(socketFlags, bufferManager));
         }
 
-        public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameClientObservable(this TcpClient client, BufferManager bufferManager)
+        public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameClientObservable(this Socket socket, SocketFlags socketFlags, BufferManager bufferManager)
         {
-            return client.GetStream().ToFrameStreamObservable(bufferManager);
+            return Observable.Create<DisposableValue<ArraySegment<byte>>>(async (observer, token) =>
+            {
+                var headerBuffer = new byte[sizeof(int)];
+
+                try
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        if (await socket.ReceiveCompletelyAsync(headerBuffer, headerBuffer.Length, socketFlags, token) != headerBuffer.Length)
+                            break;
+                        var length = BitConverter.ToInt32(headerBuffer, 0);
+
+                        var buffer = bufferManager.TakeBuffer(length);
+                        if (await socket.ReceiveCompletelyAsync(buffer, length, socketFlags, token) != length)
+                            break;
+
+                        observer.OnNext(
+                            new DisposableValue<ArraySegment<byte>>(new ArraySegment<byte>(buffer, 0, length),
+                                Disposable.Create(() => bufferManager.ReturnBuffer(buffer))));
+                    }
+
+                    observer.OnCompleted();
+
+                    socket.Close();
+                }
+                catch (Exception error)
+                {
+                    observer.OnError(error);
+                }
+            });
         }
 
-        public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameClientObserver(this TcpClient client, CancellationToken token)
+        public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameClientObserver(this Socket socket, SocketFlags socketFlags, CancellationToken token)
         {
-            return client.GetStream().ToFrameStreamObserver(token);
+            return Observer.Create<DisposableValue<ArraySegment<byte>>>(async managedBuffer =>
+            {
+                var headerBuffer = BitConverter.GetBytes(managedBuffer.Value.Count);
+                await socket.SendCompletelyAsync(
+                    new[]
+                    {
+                        new ArraySegment<byte>(headerBuffer, 0, headerBuffer.Length),
+                        new ArraySegment<byte>(managedBuffer.Value.Array, 0, managedBuffer.Value.Count)
+                    },
+                    SocketFlags.None,
+                    token);
+            });
         }
     }
 }

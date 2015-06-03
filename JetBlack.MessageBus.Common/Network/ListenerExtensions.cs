@@ -7,25 +7,27 @@ namespace JetBlack.MessageBus.Common.Network
 {
     public static class ListenerExtensions
     {
-        public static IObservable<TcpClient> ToListenerObservable(this IPEndPoint endpoint, int backlog)
+        public static IObservable<Socket> ToListenerObservable(this IPEndPoint endpoint, int backlog)
         {
-            return new TcpListener(endpoint).ToListenerObservable(backlog);
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.Bind(endpoint);
+            return socket.ToListenerObservable(backlog);
         }
 
-        public static IObservable<TcpClient> ToListenerObservable(this TcpListener listener, int backlog)
+        public static IObservable<Socket> ToListenerObservable(this Socket socket, int backlog)
         {
-            return Observable.Create<TcpClient>(async (observer, token) =>
+            return Observable.Create<Socket>(async (observer, token) =>
             {
-                listener.Start(backlog);
+                socket.Listen(backlog);
 
                 try
                 {
                     while (!token.IsCancellationRequested)
-                        observer.OnNext(await listener.AcceptTcpClientAsync());
+                        observer.OnNext(await socket.AcceptAsync());
 
                     observer.OnCompleted();
 
-                    listener.Stop();
+                    socket.Close();
                 }
                 catch (Exception error)
                 {
