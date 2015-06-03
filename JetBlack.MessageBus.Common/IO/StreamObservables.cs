@@ -6,9 +6,9 @@ namespace JetBlack.MessageBus.Common.IO
 {
     public static class StreamObservables
     {
-        public static IObservable<ByteBuffer> ToStreamObservable(this Stream stream, int size)
+        public static IObservable<ArraySegment<byte>> ToStreamObservable(this Stream stream, int size)
         {
-            return Observable.Create<ByteBuffer>(async (observer, token) =>
+            return Observable.Create<ArraySegment<byte>>(async (observer, token) =>
             {
                 var buffer = new byte[size];
 
@@ -20,7 +20,7 @@ namespace JetBlack.MessageBus.Common.IO
                         if (received == 0)
                             break;
 
-                        observer.OnNext(new ByteBuffer(buffer, received));
+                        observer.OnNext(new ArraySegment<byte>(buffer, 0, received));
                     }
 
                     observer.OnCompleted();

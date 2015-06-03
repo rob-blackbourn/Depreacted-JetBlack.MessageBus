@@ -56,9 +56,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Diagnostics\Log4NetExtensions.cs" />
+    <Compile Include="DisposableValue.cs" />
     <Compile Include="IO\BufferedMemoryStream.cs" />
-    <Compile Include="IO\ByteBuffer.cs" />
-    <Compile Include="IO\DisposableByteBuffer.cs" />
     <Compile Include="IO\FrameStream.cs" />
     <Compile Include="IO\IByteEncoder.cs" />
     <Compile Include="IO\StreamExtensions.cs" />

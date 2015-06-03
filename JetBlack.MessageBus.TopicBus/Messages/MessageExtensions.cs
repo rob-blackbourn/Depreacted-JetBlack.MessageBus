@@ -7,6 +7,7 @@ using BufferManager = System.ServiceModel.Channels.BufferManager;
 using System.Threading;
 using JetBlack.MessageBus.Common.IO;
 using JetBlack.MessageBus.Common.Network;
+using JetBlack.MessageBus.Common;
 
 namespace JetBlack.MessageBus.TopicBus.Messages
 {
@@ -18,7 +19,7 @@ namespace JetBlack.MessageBus.TopicBus.Messages
                 observer => tcpClient.ToFrameClientObservable(bufferManager).Subscribe(
                     disposableBuffer =>
                     {
-                        using (var messageStream = new MemoryStream(disposableBuffer.Bytes, 0, disposableBuffer.Length, false, false))
+                        using (var messageStream = new MemoryStream(disposableBuffer.Value.Array, disposableBuffer.Value.Offset, disposableBuffer.Value.Count, false, false))
                         {
                             var message = Message.Read(messageStream);
                             observer.OnNext(message);
@@ -37,7 +38,8 @@ namespace JetBlack.MessageBus.TopicBus.Messages
             {
                 var messageStream = new BufferedMemoryStream(bufferManager, 256);
                 message.Write(messageStream);
-                socketObserver.OnNext(new DisposableByteBuffer(messageStream.GetBuffer(), (int)messageStream.Length, messageStream));
+                var buffer = new ArraySegment<byte>(messageStream.GetBuffer(), 0, (int)messageStream.Length);
+                socketObserver.OnNext(DisposableValue.Create(buffer, messageStream));
             });
         }
     }
