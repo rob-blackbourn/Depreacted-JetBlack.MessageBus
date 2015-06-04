@@ -11,7 +11,6 @@ I have completed the following goals (note the tenses!):
 * I wanted to make the distributor data agnostic. My original implementation serialised a dictionary of known types.
 
 The following is on my todo/wish list.
-* Test the caching publisher.
 * Understand the close and fault behaviour of clients and the distributor.
 * Improve the client adapters. A naive user should not need to know about network addresses or the dynamics of sockets and address resolution.
 * Add authentication. I would like to support an SASL style authenticator that is OS agnostic.
