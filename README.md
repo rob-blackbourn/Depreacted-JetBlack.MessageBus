@@ -12,6 +12,7 @@ I have completed the following goals (note the tenses!):
 
 The following is on my todo/wish list.
 * Test the caching publisher.
+* Understand the close and fault behaviour of clients and the distributor.
 * Improve the client adapters. A naive user should not need to know about network addresses or the dynamics of sockets and address resolution.
 * Add authentication. I would like to support an SASL style authenticator that is OS agnostic.
 * Add authorisation. Many data feeds have permissioning, such that data should only be distributed to those that are paying for it. This is often true at the field level. I need to do this without the distributor knowing the structure of the data.

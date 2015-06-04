@@ -1,39 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
+using System.Reactive.Concurrency;
+using System.Threading;
+using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<T, TValue> where T:IDictionary<string,TValue>
+    public class CachingPublisher<T, TValue> : Client<T> where T:IDictionary<string,TValue>
     {
-        public event EventHandler<DataReceivedEventArgs<T>> OnDataReceived;
+        private readonly Cache _cache;
+        private readonly object _gate = new Object();
 
-        readonly Dictionary<string, CacheItem> _topicCache = new Dictionary<string, CacheItem>();
-
-        public CachingPublisher(Client<T> client)
+        public CachingPublisher(Socket socket, IByteEncoder<T> byteEncoder, IScheduler scheduler, CancellationToken token)
+            : base(socket, byteEncoder, scheduler, token)
         {
-            Client = client;
-            Client.OnForwardedSubscription += OnForwardedSubscription;
+            _cache = new Cache(this);
+            OnForwardedSubscription += (sender, args) =>
+            {
+                lock (_gate)
+                {
+                    if (args.IsAdd)
+                        _cache.AddSubscription(args.ClientId, args.Topic);
+                    else
+                        _cache.RemoveSubscription(args.ClientId, args.Topic);
+                }
+            };
         }
 
-        public Client<T> Client { get; private set; }
-
-        private void OnForwardedSubscription(object sender, ForwardedSubscriptionEventArgs e)
+        public void Publish(string topic, T data)
         {
-            if (e.IsAdd)
-                Add(e.ClientId, e.Topic);
-            else
-                Remove(e.ClientId, e.Topic);
+            lock (_gate)
+            {
+                _cache.Publish(topic, data);
+            }
         }
 
-        private void Add(int clientId, string topic)
+        class Cache : Dictionary<string, CacheItem>
         {
-            lock (_topicCache)
+            private readonly Client<T> _client;
+
+            public Cache(Client<T> client)
+            {
+                _client = client;
+            }
+
+            public void AddSubscription(int clientId, string topic)
             {
                 // Have we received a subscription or published data on this topic yet?
                 CacheItem cacheItem;
-                if (!_topicCache.TryGetValue(topic, out cacheItem))
-                    _topicCache.Add(topic, cacheItem = new CacheItem());
+                if (!TryGetValue(topic, out cacheItem))
+                    Add(topic, cacheItem = new CacheItem());
 
                 // Has this client already subscribed to this topic?
                 if (!cacheItem.ClientStates.ContainsKey(clientId))
@@ -42,71 +60,59 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     cacheItem.ClientStates.Add(clientId, false);
                 }
 
-                if (!cacheItem.ClientStates[clientId] && cacheItem.Data != null)
+                if (!cacheItem.ClientStates[clientId] && !Equals(cacheItem.Data, default(T)))
                 {
                     // Send the image and mark this client appropriately.
                     cacheItem.ClientStates[clientId] = true;
 
-                    Client.Send(clientId, topic, true, cacheItem.Data);
+                    _client.Send(clientId, topic, true, cacheItem.Data);
                 }
             }
-        }
 
-        private void Remove(int clientId, string topic)
-        {
-            lock (_topicCache)
+            public void RemoveSubscription(int clientId, string topic)
             {
                 // Have we received a subscription or published data on this topic yet?
                 CacheItem cacheItem;
-                if (_topicCache.TryGetValue(topic, out cacheItem))
-                {
-                    // Does this topic have this client?
-                    if (cacheItem.ClientStates.ContainsKey(clientId))
-                    {
-                        cacheItem.ClientStates.Remove(clientId);
+                if (!TryGetValue(topic, out cacheItem))
+                    return;
 
-                        // If there are no clients and no data remove the item.
-                        if (cacheItem.ClientStates.Count == 0 && cacheItem.Data == null)
-                            _topicCache.Remove(topic);
-                    }
-                }
+                // Does this topic have this client?
+                if (!cacheItem.ClientStates.ContainsKey(clientId))
+                    return;
+
+                cacheItem.ClientStates.Remove(clientId);
+
+                // If there are no clients and no data remove the item.
+                if (cacheItem.ClientStates.Count == 0 && Equals(cacheItem.Data, default(T)))
+                    Remove(topic);
             }
-        }
 
-        public void Publish(string topic, T data)
-        {
-            Publish(topic, false, data);
-        }
-
-        void Publish(string topic, bool isImage, T data)
-        {
-            // If the topic is not in the cache add it.
-            CacheItem cacheItem;
-            if (!_topicCache.TryGetValue(topic, out cacheItem))
-                _topicCache.Add(topic, cacheItem = new CacheItem { Data = data });
-
-            // Bring the cache data up to date.
-            if (data != null)
-                foreach (var item in data)
-                    cacheItem.Data[item.Key] = item.Value;
-
-            // Are there any clients yet to receive any message on this feed/topic?
-            if (cacheItem.ClientStates.Values.Any(c => !c))
+            public void Publish(string topic, T data)
             {
-                // Yes. Deliver idividual messages.
-                foreach (var clientId in cacheItem.ClientStates.Keys.ToArray())
+                // If the topic is not in the cache add it.
+                CacheItem cacheItem;
+                if (!TryGetValue(topic, out cacheItem))
+                    Add(topic, cacheItem = new CacheItem { Data = data });
+
+                // Bring the cache data up to date.
+                if (Equals(data, default(T)) || Equals(cacheItem.Data, default(T)))
+                    cacheItem.Data = data; // overwrite
+                else // update
+                    foreach (var item in data)
+                        cacheItem.Data[item.Key] = item.Value;
+
+                foreach (var clientState in cacheItem.ClientStates.ToList())
                 {
-                    if (cacheItem.ClientStates[clientId])
-                        Client.Send(clientId, topic, isImage, data);
+                    if (clientState.Value)
+                        _client.Send(clientState.Key, topic, false, data);
                     else
                     {
-                        Client.Send(clientId, topic, true, cacheItem.Data);
-                        cacheItem.ClientStates[clientId] = true;
+                        // Deliver idividual messages to any clients yet to receive an image.
+                        _client.Send(clientState.Key, topic, true, cacheItem.Data);
+                        cacheItem.ClientStates[clientState.Key] = true;
                     }
                 }
             }
-            else
-                Client.Publish(topic, isImage, data);
         }
 
         class CacheItem
