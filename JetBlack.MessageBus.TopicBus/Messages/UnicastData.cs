@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using JetBlack.MessageBus.Common.Diagnostics;
 using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Messages
@@ -24,45 +25,23 @@ namespace JetBlack.MessageBus.TopicBus.Messages
             var clientId = stream.ReadInt32();
             var topic = stream.ReadString();
             var isImage = stream.ReadBoolean();
-
-            var nbytes = stream.ReadInt32();
-            var data = new byte[nbytes];
-            var offset = 0;
-            while (nbytes > 0)
-            {
-                var bytesRead = stream.Read(data, offset, nbytes);
-                if (bytesRead == 0)
-                    throw new EndOfStreamException();
-                nbytes -= bytesRead;
-                offset += bytesRead;
-            }
-
+            var data = stream.ReadByteArray();
             return new UnicastData(clientId, topic, isImage, data);
         }
 
         public override Stream Write(Stream stream)
         {
             base.Write(stream);
-
             stream.Write(ClientId);
             stream.Write(Topic);
             stream.Write(IsImage);
-
-            if (Data == null)
-                stream.Write(0);
-            else
-            {
-                stream.Write(Data.Length);
-                stream.Write(Data, 0, Data.Length);
-            }
-
+            stream.Write(Data);
             return stream;
         }
 
         public override string ToString()
         {
-            return string.Format("{0} {1} {2} {3} {4}", MessageType, ClientId, Topic, IsImage, Data == null ? null : Data.Length + " bytes");
+            return string.Format("{0}, ClientId={1}, Topic={2}, IsImage={3}, Data={4}", base.ToString(), ClientId, Topic.ToFormattedString(), IsImage, Data.ToFormattedString());
         }
     }
-
 }

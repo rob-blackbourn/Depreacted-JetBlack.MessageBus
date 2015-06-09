@@ -44,5 +44,10 @@ namespace JetBlack.MessageBus.TopicBus.Messages
             stream.Write((byte)MessageType);
             return stream;
         }
+
+        public override string ToString()
+        {
+            return string.Format("MessageType={0}", MessageType);
+        }
     }
 }

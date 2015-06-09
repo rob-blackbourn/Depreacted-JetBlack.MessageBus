@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using JetBlack.MessageBus.Common.Diagnostics;
 using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Messages
@@ -32,7 +33,7 @@ namespace JetBlack.MessageBus.TopicBus.Messages
 
         public override string ToString()
         {
-            return string.Format("{0} {1} {2}", MessageType, Topic, IsAdd);
+            return string.Format("{0}, Topic={1}, IsAdd={2}", base.ToString(), Topic.ToFormattedString(), IsAdd);
         }
     }
 }

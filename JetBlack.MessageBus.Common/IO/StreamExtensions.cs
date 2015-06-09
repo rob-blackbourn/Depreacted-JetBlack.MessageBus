@@ -81,6 +81,22 @@ namespace JetBlack.MessageBus.Common.IO
             return Encoding.UTF8.GetString(stream.ReadFully(new byte[len]));
         }
 
+        public static byte[] ReadByteArray(this Stream stream)
+        {
+            var nbytes = stream.ReadInt32();
+            var data = new byte[nbytes];
+            var offset = 0;
+            while (nbytes > 0)
+            {
+                var bytesRead = stream.Read(data, offset, nbytes);
+                if (bytesRead == 0)
+                    throw new EndOfStreamException();
+                nbytes -= bytesRead;
+                offset += bytesRead;
+            }
+            return data;
+        }
+
         static byte[] ReadFully(this Stream stream, byte[] buf)
         {
             return stream.ReadFully(buf, 0, buf.Length);
@@ -175,7 +191,18 @@ namespace JetBlack.MessageBus.Common.IO
             stream.Write(address.Length);
             stream.Write(address, 0, address.Length);
         }
-            
+
+        public static void Write(this Stream stream, byte[] value)
+        {
+            if (value == null)
+                stream.Write(0);
+            else
+            {
+                stream.Write(value.Length);
+                stream.Write(value, 0, value.Length);
+            }
+        }
+
         #endregion
     }
 }

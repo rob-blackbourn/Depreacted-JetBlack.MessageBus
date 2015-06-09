@@ -1,12 +1,13 @@
 ﻿using System.IO;
+using JetBlack.MessageBus.Common.Diagnostics;
 using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Messages
 {
     public class NotificationRequest : Message
     {
-        public readonly bool IsAdd;
         public readonly string TopicPattern;
+        public readonly bool IsAdd;
 
         public NotificationRequest(string topicPattern, bool isAdd)
             : base(MessageType.NotificationRequest)
@@ -32,7 +33,7 @@ namespace JetBlack.MessageBus.TopicBus.Messages
 
         override public string ToString()
         {
-            return string.Format("{0} {1} {2}", MessageType, TopicPattern, IsAdd);
+            return string.Format("{0}, TopicPattern={1}, IsAdd={2}", base.ToString(), TopicPattern.ToFormattedString(), IsAdd);
         }
     }
 }

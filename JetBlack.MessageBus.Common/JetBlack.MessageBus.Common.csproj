@@ -55,6 +55,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Diagnostics\FormatExtensions.cs" />
     <Compile Include="Diagnostics\Log4NetExtensions.cs" />
     <Compile Include="DisposableValue.cs" />
     <Compile Include="IO\BufferedMemoryStream.cs" />
