@@ -15,7 +15,9 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+        // TopicPatter->Notification.
         private readonly Dictionary<string, Notification> _cache = new Dictionary<string, Notification>();
+
         private readonly ISubject<ForwardedSubscriptionRequest> _forwardedSubscriptionRequests = new Subject<ForwardedSubscriptionRequest>();
         private readonly ISubject<SourceMessage<NotificationRequest>> _notificationRequests = new Subject<SourceMessage<NotificationRequest>>();
         private readonly ISubject<SourceMessage<Regex>> _newNotificationRequests = new Subject<SourceMessage<Regex>>();
@@ -133,10 +135,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private class Notification
         {
-            internal readonly ISet<Interactor> Notifiables = new HashSet<Interactor>();
-            internal readonly Regex TopicPattern;
+            public readonly ISet<Interactor> Notifiables = new HashSet<Interactor>();
+            public readonly Regex TopicPattern;
 
-            internal Notification(Regex topicPattern)
+            public Notification(Regex topicPattern)
             {
                 TopicPattern = topicPattern;
             }
