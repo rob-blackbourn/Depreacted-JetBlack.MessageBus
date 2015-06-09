@@ -103,7 +103,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
             var subscriber = subscribers.FirstOrDefault(x => x.Key.Id == sourceMessage.Content.ClientId).Key;
             if (subscriber != null)
-                _publisherManager.SendableUnicastDataMessages.OnNext(SourceSinkMessage.Create(sourceMessage.Source, subscriber, sourceMessage.Content));
+                _publisherManager.Send(sourceMessage.Source, subscriber, sourceMessage.Content);
         }
 
         private void OnMulticastDataPublished(SourceMessage<MulticastData> sourceMessage)
@@ -113,7 +113,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 return;
 
             foreach (var subscriber in subscribers.Keys)
-                _publisherManager.SendableMulticastDataMessages.OnNext(SourceSinkMessage.Create(sourceMessage.Source, subscriber, sourceMessage.Content));
+                _publisherManager.Send(sourceMessage.Source, subscriber, sourceMessage.Content);
         }
 
         private void OnSubscriptionRequest(SourceMessage<SubscriptionRequest> sourceMessage)

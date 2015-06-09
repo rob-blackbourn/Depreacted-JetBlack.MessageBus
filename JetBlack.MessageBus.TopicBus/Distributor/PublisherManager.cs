@@ -20,16 +20,6 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly ISubject<SourceMessage<IEnumerable<string>>> _stalePublishers = new Subject<SourceMessage<IEnumerable<string>>>();
         private readonly IDisposable _disposable;
 
-        public IObserver<SourceSinkMessage<MulticastData>> SendableMulticastDataMessages
-        {
-            get { return _sendableMulticastDataMessages; }
-        }
-
-        public IObserver<SourceSinkMessage<UnicastData>> SendableUnicastDataMessages
-        {
-            get { return _sendableUnicastDataMessages; }
-        }
-
         public IObservable<SourceMessage<IEnumerable<string>>> StalePublishers
         {
             get { return _stalePublishers; }
@@ -47,6 +37,16 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                     interactorManager.ClosedInteractors.ObserveOn(scheduler).Subscribe(OnClosedInteractor),
                     interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(OnFaultedInteractor)
                 });
+        }
+
+        public void Send(Interactor publisher, Interactor subscriber, UnicastData unicastData)
+        {
+            _sendableUnicastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, unicastData));
+        }
+
+        public void Send(Interactor publisher, Interactor subscriber, MulticastData multicastData)
+        {
+            _sendableMulticastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, multicastData));
         }
 
         private void OnMulticastMessage(SourceSinkMessage<MulticastData> routedMessage)
