@@ -3,18 +3,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using JetBlack.MessageBus.TopicBus.Messages;
-using log4net;
 using BufferManager = System.ServiceModel.Channels.BufferManager;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
-    class Interactor : IDisposable, IEquatable<Interactor>, IComparable<Interactor>
+    internal class Interactor : IDisposable, IEquatable<Interactor>, IComparable<Interactor>
     {
-        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        public readonly int Id;
 
         private readonly Socket _socket;
-        public readonly int Id;
-        readonly BufferManager _bufferManager;
+        private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
 
         public Interactor(Socket socket, int id, BufferManager bufferManager, CancellationToken token)
@@ -32,18 +30,17 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public void SendMessage(Message message)
         {
-            Log.DebugFormat("Sending {0} ({1})", this, message);
             _messageObserver.OnNext(message);
         }
 
         public IPEndPoint LocalEndPoint
         {
-            get { return (IPEndPoint)_socket.LocalEndPoint; }
+            get { return (IPEndPoint) _socket.LocalEndPoint; }
         }
 
         public IPEndPoint RemoteEndPoint
         {
-            get { return (IPEndPoint)_socket.RemoteEndPoint; }
+            get { return (IPEndPoint) _socket.RemoteEndPoint; }
         }
 
         public Socket Socket

@@ -4,6 +4,8 @@ using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using JetBlack.MessageBus.Common;
+using JetBlack.MessageBus.Common.Collections;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
 
@@ -13,11 +15,12 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly Dictionary<string, ISet<Interactor>> _topicToPublisherMap = new Dictionary<string, ISet<Interactor>>();
-        private readonly Dictionary<Interactor, ISet<string>> _publisherToTopicMap = new Dictionary<Interactor, ISet<string>>();
+        private readonly TwoWaySet<string, Interactor> _topicsAndPublishers = new TwoWaySet<string, Interactor>();
+
         private readonly ISubject<SourceSinkMessage<MulticastData>> _sendableMulticastDataMessages = new Subject<SourceSinkMessage<MulticastData>>();
         private readonly ISubject<SourceSinkMessage<UnicastData>> _sendableUnicastDataMessages = new Subject<SourceSinkMessage<UnicastData>>();
         private readonly ISubject<SourceMessage<IEnumerable<string>>> _stalePublishers = new Subject<SourceMessage<IEnumerable<string>>>();
+
         private readonly IDisposable _disposable;
 
         public IObservable<SourceMessage<IEnumerable<string>>> StalePublishers
@@ -32,10 +35,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _disposable = new CompositeDisposable(
                 new[]
                 {
-                    _sendableMulticastDataMessages.ObserveOn(scheduler).Subscribe(OnMulticastMessage),
-                    _sendableUnicastDataMessages.ObserveOn(scheduler).Subscribe(OnUnicastMessage),
+                    _sendableMulticastDataMessages.ObserveOn(scheduler).Subscribe(x => OnMulticastMessage(x.Source, x.Content, x.Sink)),
+                    _sendableUnicastDataMessages.ObserveOn(scheduler).Subscribe(x => OnUnicastMessage(x.Source, x.Content, x.Sink)),
                     interactorManager.ClosedInteractors.ObserveOn(scheduler).Subscribe(OnClosedInteractor),
-                    interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(OnFaultedInteractor)
+                    interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(x => OnFaultedInteractor(x.Source, x.Content))
                 });
         }
 
@@ -44,69 +47,35 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _sendableUnicastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, unicastData));
         }
 
-        public void Send(Interactor publisher, Interactor subscriber, MulticastData multicastData)
+        public void Send(Interactor publisher, IEnumerable<Interactor> subscribers, MulticastData multicastData)
         {
-            _sendableMulticastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, multicastData));
+            foreach (var subscriber in subscribers)
+                _sendableMulticastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, multicastData));
         }
 
-        private void OnMulticastMessage(SourceSinkMessage<MulticastData> routedMessage)
+        private void OnMulticastMessage(Interactor publisher, MulticastData multicastData, Interactor subscriber)
         {
-            RememberPublisherForTopic(routedMessage.Content.Topic, routedMessage.Source);
-            routedMessage.Sink.SendMessage(routedMessage.Content);
+            _topicsAndPublishers.Add(publisher, multicastData.Topic);
+            subscriber.SendMessage(multicastData);
         }
 
-        private void OnUnicastMessage(SourceSinkMessage<UnicastData> routedMessage)
+        private void OnUnicastMessage(Interactor publisher, UnicastData unicastData, Interactor subscriber)
         {
-            RememberPublisherForTopic(routedMessage.Content.Topic, routedMessage.Source);
-            routedMessage.Sink.SendMessage(routedMessage.Content);
-        }
-
-        private void RememberPublisherForTopic(string topic, Interactor publisher)
-        {
-            ISet<Interactor> publishers;
-            if (!_topicToPublisherMap.TryGetValue(topic, out publishers))
-                _topicToPublisherMap.Add(topic, publishers = new HashSet<Interactor>());
-            if (!publishers.Contains(publisher))
-                publishers.Add(publisher);
-
-            ISet<string> topics;
-            if (!_publisherToTopicMap.TryGetValue(publisher, out topics))
-                _publisherToTopicMap.Add(publisher, topics = new HashSet<string>());
-            if (!topics.Contains(topic))
-                topics.Add(topic);
+            _topicsAndPublishers.Add(publisher, unicastData.Topic);
+            subscriber.SendMessage(unicastData);
         }
 
         private void OnClosedInteractor(Interactor interactor)
         {
-            var staleTopics = new HashSet<string>();
-
-            ISet<string> topics;
-            if (_publisherToTopicMap.TryGetValue(interactor, out topics))
-            {
-                foreach (var topic in topics)
-                {
-                    ISet<Interactor> publishers;
-                    if (_topicToPublisherMap.TryGetValue(topic, out publishers) && publishers.Contains(interactor))
-                    {
-                        publishers.Remove(interactor);
-                        if (publishers.Count == 0)
-                        {
-                            _topicToPublisherMap.Remove(topic);
-                            staleTopics.Add(topic);
-                        }
-                    }
-                }
-
-                _publisherToTopicMap.Remove(interactor);
-            }
-
-            _stalePublishers.OnNext(SourceMessage.Create<IEnumerable<string>>(interactor, staleTopics));
+            var topicsWithoutPublishers = _topicsAndPublishers.Remove(interactor);
+            if (topicsWithoutPublishers != null)
+                _stalePublishers.OnNext(SourceMessage.Create(interactor, topicsWithoutPublishers));
         }
 
-        private void OnFaultedInteractor(SourceMessage<Exception> sourceMessage)
+        private void OnFaultedInteractor(Interactor interactor, Exception error)
         {
-            Log.Warn("Interactor faulted: " + sourceMessage.Source, sourceMessage.Content);
-            OnClosedInteractor(sourceMessage.Source);
+            Log.Warn("Interactor faulted: " + interactor, error);
+            OnClosedInteractor(interactor);
         }
 
         public void Dispose()

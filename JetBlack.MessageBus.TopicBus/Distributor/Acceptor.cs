@@ -8,25 +8,20 @@ using JetBlack.MessageBus.Common.Network;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
-    class Acceptor
+    internal class Acceptor
     {
-        const int MaxBufferPoolSize = 100;
-        const int MaxBufferSize = 100000;
+        private const int MaxBufferPoolSize = 100;
+        private const int MaxBufferSize = 100000;
 
-        int _nextInteractorId;
-        readonly BufferManager _bufferManager;
-
-        public Acceptor()
-        {
-            _bufferManager = BufferManager.CreateBufferManager(MaxBufferPoolSize, MaxBufferSize);
-        }
+        private int _nextId;
+        private readonly BufferManager _bufferManager = BufferManager.CreateBufferManager(MaxBufferPoolSize, MaxBufferSize);
 
         public IObservable<Interactor> ToObservable(IPEndPoint endPoint, CancellationToken token)
         {
             return Observable.Create<Interactor>(observer =>
                 endPoint.ToListenerObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
-                    .Subscribe(client => observer.OnNext(new Interactor(client, _nextInteractorId++, _bufferManager, token))));
+                    .Subscribe(socket => observer.OnNext(new Interactor(socket, _nextId++, _bufferManager, token))));
         }
     }
 }

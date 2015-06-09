@@ -11,7 +11,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly IList<Interactor> _interactors = new List<Interactor>();
+        private readonly ISet<Interactor> _interactors = new HashSet<Interactor>();
         private readonly ISubject<Interactor> _closedInteractors = new Subject<Interactor>();
         private readonly ISubject<SourceMessage<Exception>> _faultedInteractors = new Subject<SourceMessage<Exception>>();
 

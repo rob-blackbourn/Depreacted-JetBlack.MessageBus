@@ -38,23 +38,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             interactor.ToObservable()
                 .ObserveOn(_scheduler)
                 .Subscribe(
-                    message => Forward(interactor, message),
+                    message => OnMessage(interactor, message),
                     error => _interactorManager.FaultInteractor(interactor, error),
                     () => _interactorManager.CloseInteractor(interactor));
         }
 
-        private void Forward(Interactor sender, Message message)
+        private void OnMessage(Interactor sender, Message message)
         {
-            Log.DebugFormat("Forward(sender={0}, message={1}", sender, message);
+            Log.DebugFormat("OnMessage(sender={0}, message={1}", sender, message);
 
             switch (message.MessageType)
             {
                 case MessageType.SubscriptionRequest:
-                {
-                    var subscriptionRequest = (SubscriptionRequest) message;
-                    _subscriptionManager.AddSubscription(sender, subscriptionRequest);
-                    _notificationManager.NotifySubscriptionRequest(sender.Id, subscriptionRequest.Topic, subscriptionRequest.IsAdd);
-                }
+                    _subscriptionManager.RequestSubscription(sender, (SubscriptionRequest)message);
                     break;
 
                 case MessageType.MulticastData:

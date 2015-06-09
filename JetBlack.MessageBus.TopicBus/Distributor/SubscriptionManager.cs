@@ -35,13 +35,13 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _disposable = new CompositeDisposable(
                 new[]
                 {
-                    _subscriptionRequests.ObserveOn(scheduler).Subscribe(OnSubscriptionRequest),
-                    _notificationManager.NewNotificationRequests.ObserveOn(scheduler).Subscribe(OnNewNotificationRequest),
-                    _publishedMulticastDataMessages.ObserveOn(scheduler).Subscribe(OnMulticastDataPublished),
-                    _publishedUnicastDataMessages.ObserveOn(scheduler).Subscribe(OnUnicastDataPublished),
-                    _publisherManager.StalePublishers.ObserveOn(scheduler).Subscribe(OnStalePublisher),
+                    _subscriptionRequests.ObserveOn(scheduler).Subscribe(x => OnSubscriptionRequest(x.Source, x.Content)),
+                    _notificationManager.NewNotificationRequests.ObserveOn(scheduler).Subscribe(x => OnNewNotificationRequest(x.Source, x.Content)),
+                    _publishedMulticastDataMessages.ObserveOn(scheduler).Subscribe(x => OnMulticastDataPublished(x.Source, x.Content)),
+                    _publishedUnicastDataMessages.ObserveOn(scheduler).Subscribe(x => OnUnicastDataPublished(x.Source, x.Content)),
+                    _publisherManager.StalePublishers.ObserveOn(scheduler).Subscribe(x => OnStaleTopics(x.Content)),
                     interactorManager.ClosedInteractors.ObserveOn(scheduler).Subscribe(OnClosedInteractor),
-                    interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(OnFaultedInteractor)
+                    interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(x => OnFaultedInteractor(x.Source, x.Content))
                 });
         }
 
@@ -59,18 +59,20 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _publishedUnicastDataMessages.OnNext(SourceMessage.Create(sender, unicastData));
         }
 
-        public void AddSubscription(Interactor sender, SubscriptionRequest request)
+        public void RequestSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
         {
-            Log.DebugFormat("AddSubscription(sender={0}, request={1})", sender, request);
+            Log.DebugFormat("RequestSubscription(sender={0}, request={1})", subscriber, subscriptionRequest);
 
-            _subscriptionRequests.OnNext(SourceMessage.Create(sender, request));
+            _subscriptionRequests.OnNext(SourceMessage.Create(subscriber, subscriptionRequest));
+
+            _notificationManager.ForwardSubscription(subscriber, subscriptionRequest.Topic, subscriptionRequest.IsAdd);
         }
 
-        private void OnFaultedInteractor(SourceMessage<Exception> sourceMessage)
+        private void OnFaultedInteractor(Interactor interactor, Exception error)
         {
-            Log.Warn("Interactor faulted: " + sourceMessage.Source, sourceMessage.Content);
+            Log.Warn("Interactor faulted: " + interactor, error);
 
-            OnClosedInteractor(sourceMessage.Source);
+            OnClosedInteractor(interactor);
         }
 
         private void OnClosedInteractor(Interactor interactor)
@@ -78,108 +80,121 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             Log.DebugFormat("Removing subscriptions for {0}", interactor);
 
             // Remove the subscriptions
-            var subscriptions = new List<string>();
-            var emptySubscriptions = new List<string>();
-            foreach (var item in _cache.Where(x => x.Value.ContainsKey(interactor)))
+            var topicsSubscribedTo = new List<string>();
+            var topicsWithoutSubscribers = new List<string>();
+            foreach (var subscription in _cache.Where(x => x.Value.ContainsKey(interactor)))
             {
-                item.Value.Remove(interactor);
-                if (item.Value.Count == 0)
-                    emptySubscriptions.Add(item.Key);
-                subscriptions.Add(item.Key);
+                topicsSubscribedTo.Add(subscription.Key);
+
+                subscription.Value.Remove(interactor);
+                if (subscription.Value.Count == 0)
+                    topicsWithoutSubscribers.Add(subscription.Key);
             }
 
-            foreach (var topic in subscriptions)
-                _notificationManager.NotifySubscriptionRequest(interactor.Id, topic, false);
-
-            foreach (var topic in emptySubscriptions)
+            foreach (var topic in topicsWithoutSubscribers)
                 _cache.Remove(topic);
+
+            // Inform those interested that this interactor is no longer subscribed to these topics.
+            foreach (var topic in topicsSubscribedTo)
+                _notificationManager.ForwardSubscription(interactor, topic, false);
         }
 
-        private void OnUnicastDataPublished(SourceMessage<UnicastData> sourceMessage)
+        private void OnUnicastDataPublished(Interactor publisher, UnicastData unicastData)
         {
+            // Are there subscribers for this topic?
             IDictionary<Interactor, int> subscribers;
-            if (!_cache.TryGetValue(sourceMessage.Content.Topic, out subscribers))
+            if (!_cache.TryGetValue(unicastData.Topic, out subscribers))
                 return;
 
-            var subscriber = subscribers.FirstOrDefault(x => x.Key.Id == sourceMessage.Content.ClientId).Key;
-            if (subscriber != null)
-                _publisherManager.Send(sourceMessage.Source, subscriber, sourceMessage.Content);
-        }
-
-        private void OnMulticastDataPublished(SourceMessage<MulticastData> sourceMessage)
-        {
-            IDictionary<Interactor, int> subscribers;
-            if (!_cache.TryGetValue(sourceMessage.Content.Topic, out subscribers))
+            // Can we find this client in the subscribers to this topic?
+            var subscriber = subscribers.FirstOrDefault(x => x.Key.Id == unicastData.ClientId).Key;
+            if (subscriber == null)
                 return;
 
-            foreach (var subscriber in subscribers.Keys)
-                _publisherManager.Send(sourceMessage.Source, subscriber, sourceMessage.Content);
+            _publisherManager.Send(publisher, subscriber, unicastData);
         }
 
-        private void OnSubscriptionRequest(SourceMessage<SubscriptionRequest> sourceMessage)
+        private void OnMulticastDataPublished(Interactor publisher, MulticastData multicastData)
         {
-            Log.DebugFormat("Received subscription from {0} on \"{1}\"", sourceMessage.Source, sourceMessage.Content);
+            // Are there subscribers for this topic?
+            IDictionary<Interactor, int> subscribers;
+            if (!_cache.TryGetValue(multicastData.Topic, out subscribers))
+                return;
 
-            if (sourceMessage.Content.IsAdd)
-                AddSubscription(sourceMessage.Source, sourceMessage.Content.Topic);
+            _publisherManager.Send(publisher, subscribers.Keys, multicastData);
+        }
+
+        private void OnSubscriptionRequest(Interactor subscriber, SubscriptionRequest subscriptionRequest)
+        {
+            Log.DebugFormat("Received subscription from {0} on \"{1}\"", subscriber, subscriptionRequest);
+
+            if (subscriptionRequest.IsAdd)
+                AddSubscription(subscriber, subscriptionRequest.Topic);
             else
-                RemoveSubscription(sourceMessage.Source, sourceMessage.Content.Topic);
+                RemoveSubscription(subscriber, subscriptionRequest.Topic);
         }
 
         private void AddSubscription(Interactor subscriber, string topic)
         {
             // Find the list of interactors that have subscribed to this topic.
-            IDictionary<Interactor, int> subscribers;
-            if (!_cache.TryGetValue(topic, out subscribers))
-                _cache.Add(topic, (subscribers = new Dictionary<Interactor, int>()));
-
-            if (subscribers.ContainsKey(subscriber))
-                ++subscribers[subscriber];
+            IDictionary<Interactor, int> subscribersForTopic;
+            if (!_cache.TryGetValue(topic, out subscribersForTopic))
+                _cache.Add(topic, new Dictionary<Interactor, int> {{subscriber, 1}});
+            else if (!subscribersForTopic.ContainsKey(subscriber))
+                subscribersForTopic.Add(subscriber, 1);
             else
-                subscribers.Add(subscriber, 1);
+                ++subscribersForTopic[subscriber];
         }
 
         private void RemoveSubscription(Interactor subscriber, string topic)
         {
-            IDictionary<Interactor, int> subscribers;
-            if (!_cache.TryGetValue(topic, out subscribers))
+            // Can we find this topic in the cache?
+            IDictionary<Interactor, int> subscribersForTopic;
+            if (!_cache.TryGetValue(topic, out subscribersForTopic))
                 return;
 
-            if (subscribers.ContainsKey(subscriber))
-            {
-                if (--subscribers[subscriber] <= 0)
-                    subscribers.Remove(subscriber);
-            }
+            // Has this subscriber registered an interest in the topic?
+            if (!subscribersForTopic.ContainsKey(subscriber))
+                return;
 
-            if (subscribers.Count == 0)
+            // Decrement the subscription count, and if there are none left, remove it.
+            if (--subscribersForTopic[subscriber] == 0)
+                subscribersForTopic.Remove(subscriber);
+
+            // If there are no subscribers left on this topic, remove it from the cache.
+            if (subscribersForTopic.Count == 0)
                 _cache.Remove(topic);
         }
 
-        private void OnNewNotificationRequest(SourceMessage<Regex> sourceMessage)
+        private void OnNewNotificationRequest(Interactor requester, Regex topicRegex)
         {
-            foreach (var item in _cache.Where(x => sourceMessage.Content.Match(x.Key).Success))
-            {
-                Log.DebugFormat("Notification pattern {0} matched [{1}] subscribers", sourceMessage.Content, string.Join(",", item.Value));
-
-                foreach (var subscriber in item.Value.Keys)
-                    sourceMessage.Source.SendMessage(new ForwardedSubscriptionRequest(subscriber.Id, item.Key, true));
-            }
+            // Find the subscribers whoes subscriptions match the pattern.
+            foreach (var matchingSubscriptions in _cache.Where(x => topicRegex.IsMatch(x.Key)))
+                ForwardSubscriptionRequest(requester, matchingSubscriptions.Key, matchingSubscriptions.Value.Keys);
         }
 
-        private void OnStalePublisher(SourceMessage<IEnumerable<string>> forwardedMessage)
+        private static void ForwardSubscriptionRequest(Interactor requester, string topic, IEnumerable<Interactor> subscribers)
         {
-            foreach (var staleTopic in forwardedMessage.Content)
-                OnStalePublisher(staleTopic);
+            // Tell the requestor about subscribers that are interested in this topic.
+            foreach (var subscriber in subscribers)
+                requester.SendMessage(new ForwardedSubscriptionRequest(subscriber.Id, topic, true));
         }
 
-        private void OnStalePublisher(string staleTopic)
+        private void OnStaleTopics(IEnumerable<string> staleTopics)
         {
-            IDictionary<Interactor, int> subscribers;
-            if (!_cache.TryGetValue(staleTopic, out subscribers))
+            foreach (var staleTopic in staleTopics)
+                OnStaleTopic(staleTopic);
+        }
+
+        private void OnStaleTopic(string staleTopic)
+        {
+            IDictionary<Interactor, int> subscribersForTopic;
+            if (!_cache.TryGetValue(staleTopic, out subscribersForTopic))
                 return;
 
+            // Inform subscribers by sending an image with no data.
             var staleMessage = new MulticastData(staleTopic, true, null);
-            foreach (var subscriber in subscribers.Keys)
+            foreach (var subscriber in subscribersForTopic.Keys)
                 subscriber.SendMessage(staleMessage);
         }
 

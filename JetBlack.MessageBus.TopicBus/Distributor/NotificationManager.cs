@@ -6,6 +6,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
+using JetBlack.MessageBus.Common.Collections;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
 
@@ -15,12 +16,13 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        // TopicPatter->Notification.
-        private readonly Dictionary<string, Notification> _cache = new Dictionary<string, Notification>();
+        private readonly Dictionary<string, ISet<Interactor>> _topicPatternToNotifiables = new Dictionary<string, ISet<Interactor>>();
+        private readonly Dictionary<string, Regex> _topicPatternToRegex = new Dictionary<string, Regex>();
 
         private readonly ISubject<ForwardedSubscriptionRequest> _forwardedSubscriptionRequests = new Subject<ForwardedSubscriptionRequest>();
         private readonly ISubject<SourceMessage<NotificationRequest>> _notificationRequests = new Subject<SourceMessage<NotificationRequest>>();
         private readonly ISubject<SourceMessage<Regex>> _newNotificationRequests = new Subject<SourceMessage<Regex>>();
+
         private readonly IDisposable _disposable;
 
         public NotificationManager(InteractorManager interactorManager)
@@ -32,10 +34,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _disposable = new CompositeDisposable(
                 new[]
                 {
-                    _notificationRequests.ObserveOn(scheduler).Subscribe(OnNotificationRequest),
+                    _notificationRequests.ObserveOn(scheduler).Subscribe(x => OnNotificationRequest(x.Source, x.Content)),
                     _forwardedSubscriptionRequests.ObserveOn(scheduler).Subscribe(OnForwardedSubscriptionRequest),
                     interactorManager.ClosedInteractors.ObserveOn(scheduler).Subscribe(OnClosedInteractor),
-                    interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(OnFaultedInteractor)
+                    interactorManager.FaultedInteractors.ObserveOn(scheduler).Subscribe(x => OnFaultedInteractor(x.Source, x.Content))
                 });
         }
 
@@ -49,99 +51,114 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _forwardedSubscriptionRequests; }
         }
 
-        public void NotifySubscriptionRequest(int id, string topic, bool isAdd)
+        public void ForwardSubscription(Interactor subscriber, string topic, bool isAdd)
         {
-            _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(id, topic, isAdd));
+            _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(subscriber.Id, topic, isAdd));
         }
 
-        public void RequestNotification(Interactor sender, NotificationRequest notificationRequest)
+        public void RequestNotification(Interactor notifiable, NotificationRequest notificationRequest)
         {
-            _notificationRequests.OnNext(SourceMessage.Create(sender, notificationRequest));
+            _notificationRequests.OnNext(SourceMessage.Create(notifiable, notificationRequest));
         }
 
-        private void OnFaultedInteractor(SourceMessage<Exception> sourceMessage)
+        private void OnFaultedInteractor(Interactor interactor, Exception error)
         {
-            Log.Warn("Interactor faulted: " + sourceMessage.Source, sourceMessage.Content);
-            OnClosedInteractor(sourceMessage.Source);
+            Log.Warn("Interactor faulted: " + interactor, error);
+            OnClosedInteractor(interactor);
         }
 
         private void OnClosedInteractor(Interactor interactor)
         {
             Log.DebugFormat("Removing notification requests from {0}", interactor);
 
-            var emptyNotifications = new List<string>();
-            foreach (var item in _cache.Where(x => x.Value.Notifiables.Contains(interactor)))
+            // Remove the interactor where it appears in the notifiables, remembering any topics which are left without any interactors.
+            var topicsWithoutInteractors = new HashSet<string>();
+            foreach (var topicPatternToNotifiable in _topicPatternToNotifiables.Where(x => x.Value.Contains(interactor)))
             {
-                item.Value.Notifiables.Remove(interactor);
-                if (item.Value.Notifiables.Count == 0)
-                    emptyNotifications.Add(item.Key);
+                topicPatternToNotifiable.Value.Remove(interactor);
+                if (topicPatternToNotifiable.Value.Count == 0)
+                    topicsWithoutInteractors.Add(topicPatternToNotifiable.Key);
             }
 
-            foreach (var topic in emptyNotifications)
-                _cache.Remove(topic);
+            // Remove any topics left without interactors.
+            foreach (var topic in topicsWithoutInteractors)
+            {
+                _topicPatternToNotifiables.Remove(topic);
+                _topicPatternToRegex.Remove(topic);
+            }
         }
 
-        private void OnNotificationRequest(SourceMessage<NotificationRequest> sourceMessage)
+        private void OnNotificationRequest(Interactor notifiable, NotificationRequest notificationRequest)
         {
-            Log.DebugFormat("Handling notification request for {0} on {1}", sourceMessage.Source, sourceMessage.Content);
+            Log.DebugFormat("Handling notification request for {0} on {1}", notifiable, notificationRequest);
 
-            if (sourceMessage.Content.IsAdd)
-                AddNotificationRequest(sourceMessage.Source, sourceMessage.Content);
+            if (notificationRequest.IsAdd)
+                AddNotificationRequest(notifiable, notificationRequest.TopicPattern);
             else
-                RemoveNotificationRequest(sourceMessage.Source, sourceMessage.Content);
+                RemoveNotificationRequest(notifiable, notificationRequest.TopicPattern);
         }
 
-        private void AddNotificationRequest(Interactor source, NotificationRequest notificationRequest)
+        private void AddNotificationRequest(Interactor notifiable, string topicPattern)
         {
-            Notification notification;
-            if (!_cache.TryGetValue(notificationRequest.TopicPattern, out notification))
-                _cache.Add(notificationRequest.TopicPattern, notification = new Notification(new Regex(notificationRequest.TopicPattern)));
-
-            if (!notification.Notifiables.Contains(source))
+            // Find or create the set of notifiables for this topic, and cache the regex for the topic pattern.
+            ISet<Interactor> notifiables;
+            Regex topicRegex;
+            if (!_topicPatternToNotifiables.TryGetValue(topicPattern, out notifiables))
             {
-                notification.Notifiables.Add(source);
-                _newNotificationRequests.OnNext(SourceMessage.Create(source, notification.TopicPattern));
+                _topicPatternToNotifiables.Add(topicPattern, notifiables = new HashSet<Interactor>());
+                _topicPatternToRegex.Add(topicPattern, topicRegex = new Regex(topicPattern));
             }
+            else if (!notifiables.Contains(notifiable))
+                topicRegex = _topicPatternToRegex[topicPattern];
+            else
+                return;
+
+            // Add to the notifiables for this topic pattern and inform the subscription manager of the new notification request.
+            notifiables.Add(notifiable);
+            _newNotificationRequests.OnNext(SourceMessage.Create(notifiable, topicRegex));
         }
 
-        public void RemoveNotificationRequest(Interactor source, NotificationRequest notificationRequest)
+        public void RemoveNotificationRequest(Interactor notifiable, string topicPattern)
         {
-            Notification notification;
-            if (_cache.TryGetValue(notificationRequest.TopicPattern, out notification) && notification.Notifiables.Contains(source))
-            {
-                notification.Notifiables.Remove(source);
-                if (notification.Notifiables.Count == 0)
-                    _cache.Remove(notificationRequest.TopicPattern);
-            }
+            // Does this topic pattern have any notifiable interactors?
+            ISet<Interactor> notifiables;
+            if (!_topicPatternToNotifiables.TryGetValue(topicPattern, out notifiables))
+                return;
+            
+            // Is this interactor in the set of notifiables for this topic pattern?
+            if (!notifiables.Contains(notifiable))
+                return;
+
+            // Remove the interactor from the set of notifiables.
+            notifiables.Remove(notifiable);
+
+            // Are there any interactors left listening to this topic pattern?
+            if (notifiables.Count != 0)
+                return;
+
+            // Remove the empty pattern from the caches.
+            _topicPatternToNotifiables.Remove(topicPattern);
+            _topicPatternToRegex.Remove(topicPattern);
         }
 
-        private void OnForwardedSubscriptionRequest(ForwardedSubscriptionRequest message)
+        private void OnForwardedSubscriptionRequest(ForwardedSubscriptionRequest forwardedSubscriptionRequest)
         {
-            var notifiables = _cache.Values
-                .Where(x => x.TopicPattern.Matches(message.Topic).Count != 0)
-                .SelectMany(x => x.Notifiables)
-                .ToList();
+            // Find all the interactors that wish to be notified of subscriptions to this topic.
+            var notifiables = _topicPatternToRegex
+                .Where(x => x.Value.IsMatch(forwardedSubscriptionRequest.Topic))
+                .SelectMany(x => _topicPatternToNotifiables[x.Key])
+                .ToSet();
 
-            Log.DebugFormat("Notifying interactors[{0}] of subscription {1}", string.Join(",", notifiables), message);
+            Log.DebugFormat("Notifying interactors[{0}] of subscription {1}", string.Join(",", notifiables), forwardedSubscriptionRequest);
 
+            // Inform each notifiable interactor of the subscription request.
             foreach (var notifiable in notifiables)
-                notifiable.SendMessage(message);
+                notifiable.SendMessage(forwardedSubscriptionRequest);
         }
 
         public void Dispose()
         {
             _disposable.Dispose();
-        }
-
-        private class Notification
-        {
-            public readonly ISet<Interactor> Notifiables = new HashSet<Interactor>();
-            public readonly Regex TopicPattern;
-
-            public Notification(Regex topicPattern)
-            {
-                TopicPattern = topicPattern;
-            }
         }
     }
 }
