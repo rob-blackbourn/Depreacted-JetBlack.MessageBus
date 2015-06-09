@@ -15,7 +15,9 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly IDictionary<string, IDictionary<Interactor, Subscription>> _subscriptionCache = new Dictionary<string, IDictionary<Interactor, Subscription>>();
+        // Topic->Interactor->SubscriptionCount.
+        private readonly IDictionary<string, IDictionary<Interactor, int>> _cache = new Dictionary<string, IDictionary<Interactor, int>>();
+
         private readonly NotificationManager _notificationManager;
         private readonly PublisherManager _publisherManager;
         private readonly ISubject<SourceMessage<SubscriptionRequest>> _subscriptionRequests = new Subject<SourceMessage<SubscriptionRequest>>();
@@ -78,7 +80,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             // Remove the subscriptions
             var subscriptions = new List<string>();
             var emptySubscriptions = new List<string>();
-            foreach (var item in _subscriptionCache.Where(x => x.Value.ContainsKey(interactor)))
+            foreach (var item in _cache.Where(x => x.Value.ContainsKey(interactor)))
             {
                 item.Value.Remove(interactor);
                 if (item.Value.Count == 0)
@@ -90,13 +92,13 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 _notificationManager.NotifySubscriptionRequest(interactor.Id, topic, false);
 
             foreach (var topic in emptySubscriptions)
-                _subscriptionCache.Remove(topic);
+                _cache.Remove(topic);
         }
 
         private void OnUnicastDataPublished(SourceMessage<UnicastData> sourceMessage)
         {
-            IDictionary<Interactor, Subscription> subscribers;
-            if (!_subscriptionCache.TryGetValue(sourceMessage.Content.Topic, out subscribers))
+            IDictionary<Interactor, int> subscribers;
+            if (!_cache.TryGetValue(sourceMessage.Content.Topic, out subscribers))
                 return;
 
             var subscriber = subscribers.FirstOrDefault(x => x.Key.Id == sourceMessage.Content.ClientId).Key;
@@ -106,8 +108,8 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private void OnMulticastDataPublished(SourceMessage<MulticastData> sourceMessage)
         {
-            IDictionary<Interactor, Subscription> subscribers;
-            if (!_subscriptionCache.TryGetValue(sourceMessage.Content.Topic, out subscribers))
+            IDictionary<Interactor, int> subscribers;
+            if (!_cache.TryGetValue(sourceMessage.Content.Topic, out subscribers))
                 return;
 
             foreach (var subscriber in subscribers.Keys)
@@ -127,35 +129,35 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private void AddSubscription(Interactor subscriber, string topic)
         {
             // Find the list of interactors that have subscribed to this topic.
-            IDictionary<Interactor, Subscription> subscribers;
-            if (!_subscriptionCache.TryGetValue(topic, out subscribers))
-                _subscriptionCache.Add(topic, (subscribers = new Dictionary<Interactor, Subscription>()));
+            IDictionary<Interactor, int> subscribers;
+            if (!_cache.TryGetValue(topic, out subscribers))
+                _cache.Add(topic, (subscribers = new Dictionary<Interactor, int>()));
 
             if (subscribers.ContainsKey(subscriber))
-                ++subscribers[subscriber].SubscriptionCount;
+                ++subscribers[subscriber];
             else
-                subscribers.Add(subscriber, new Subscription());
+                subscribers.Add(subscriber, 1);
         }
 
         private void RemoveSubscription(Interactor subscriber, string topic)
         {
-            IDictionary<Interactor, Subscription> subscribers;
-            if (!_subscriptionCache.TryGetValue(topic, out subscribers))
+            IDictionary<Interactor, int> subscribers;
+            if (!_cache.TryGetValue(topic, out subscribers))
                 return;
 
             if (subscribers.ContainsKey(subscriber))
             {
-                if (--subscribers[subscriber].SubscriptionCount <= 0)
+                if (--subscribers[subscriber] <= 0)
                     subscribers.Remove(subscriber);
             }
 
             if (subscribers.Count == 0)
-                _subscriptionCache.Remove(topic);
+                _cache.Remove(topic);
         }
 
         private void OnNewNotificationRequest(SourceMessage<Regex> sourceMessage)
         {
-            foreach (var item in _subscriptionCache.Where(x => sourceMessage.Content.Match(x.Key).Success))
+            foreach (var item in _cache.Where(x => sourceMessage.Content.Match(x.Key).Success))
             {
                 Log.DebugFormat("Notification pattern {0} matched [{1}] subscribers", sourceMessage.Content, string.Join(",", item.Value));
 
@@ -172,8 +174,8 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private void OnStalePublisher(string staleTopic)
         {
-            IDictionary<Interactor, Subscription> subscribers;
-            if (!_subscriptionCache.TryGetValue(staleTopic, out subscribers))
+            IDictionary<Interactor, int> subscribers;
+            if (!_cache.TryGetValue(staleTopic, out subscribers))
                 return;
 
             var staleMessage = new MulticastData(staleTopic, true, null);
@@ -184,16 +186,6 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public void Dispose()
         {
             _disposable.Dispose();
-        }
-
-        private class Subscription
-        {
-            public Subscription()
-            {
-                SubscriptionCount = 1;
-            }
-
-            public int SubscriptionCount;
         }
     }
 }
