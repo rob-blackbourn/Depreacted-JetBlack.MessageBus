@@ -1,8 +1,13 @@
 ﻿using System;
+using System.Net;
+using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.ServiceModel.Channels;
+using System.Threading;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
+using Message = JetBlack.MessageBus.TopicBus.Messages.Message;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
@@ -10,6 +15,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+        private readonly bool _isAuthenticationRequired;
         private readonly IDisposable _listenerDisposable;
         private readonly InteractorManager _interactorManager;
         private readonly SubscriptionManager _subscriptionManager;
@@ -17,16 +23,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly NotificationManager _notificationManager;
         private readonly IScheduler _scheduler;
 
-        public Market(IObservable<Interactor> listenerObservable)
+        public Market(IPEndPoint endPoint, Socket authenticatorSocket, BufferManager bufferManager, CancellationToken token)
         {
-            _interactorManager = new InteractorManager();
+            _isAuthenticationRequired = authenticatorSocket != null;
+            _interactorManager = new InteractorManager(authenticatorSocket, bufferManager, token);
             _notificationManager = new NotificationManager(_interactorManager);
             _publisherManager = new PublisherManager(_interactorManager);
             _subscriptionManager = new SubscriptionManager(_interactorManager, _notificationManager, _publisherManager);
 
             _scheduler = new EventLoopScheduler();
 
-            _listenerDisposable = listenerObservable.ObserveOn(_scheduler).Subscribe(AddInteractor);
+            _listenerDisposable = new Acceptor(bufferManager).ToObservable(endPoint, _isAuthenticationRequired, token)
+                .ObserveOn(_scheduler)
+                .Subscribe(AddInteractor);
         }
 
         private void AddInteractor(Interactor interactor)
@@ -47,27 +56,42 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         {
             Log.DebugFormat("OnMessage(sender={0}, message={1}", sender, message);
 
-            switch (message.MessageType)
+            if (_isAuthenticationRequired && sender.AuthenticationStatus != AuthenticationStatus.Accepted)
             {
-                case MessageType.SubscriptionRequest:
-                    _subscriptionManager.RequestSubscription(sender, (SubscriptionRequest)message);
-                    _notificationManager.ForwardSubscription(sender, (SubscriptionRequest)message);
-                    break;
+                switch (message.MessageType)
+                {
+                    case MessageType.AuthenticationRequest:
+                        _interactorManager.OnAuthenticationRequest(sender, (AuthenticationRequest) message);
+                        break;
 
-                case MessageType.MulticastData:
-                    _subscriptionManager.SendMulticastData(sender, (MulticastData) message);
-                    break;
+                    default:
+                        throw new ArgumentException("invalid message type");
+                }
+            }
+            else
+            {
+                switch (message.MessageType)
+                {
+                    case MessageType.SubscriptionRequest:
+                        _subscriptionManager.RequestSubscription(sender, (SubscriptionRequest) message);
+                        _notificationManager.ForwardSubscription(sender, (SubscriptionRequest) message);
+                        break;
 
-                case MessageType.UnicastData:
-                    _subscriptionManager.SendUnicastData(sender, (UnicastData) message);
-                    break;
+                    case MessageType.MulticastData:
+                        _subscriptionManager.SendMulticastData(sender, (MulticastData) message);
+                        break;
 
-                case MessageType.NotificationRequest:
-                    _notificationManager.RequestNotification(sender, (NotificationRequest) message);
-                    break;
+                    case MessageType.UnicastData:
+                        _subscriptionManager.SendUnicastData(sender, (UnicastData) message);
+                        break;
 
-                default:
-                    throw new ArgumentException("invalid message type");
+                    case MessageType.NotificationRequest:
+                        _notificationManager.RequestNotification(sender, (NotificationRequest) message);
+                        break;
+
+                    default:
+                        throw new ArgumentException("invalid message type");
+                }
             }
         }
 

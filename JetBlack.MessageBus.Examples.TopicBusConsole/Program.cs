@@ -15,7 +15,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusConsole
             const int maxBufferSize = 100000;
 
             var cts = new CancellationTokenSource();
-            var server = new Server(new IPEndPoint(IPAddress.Any, 9090), maxBufferPoolSize, maxBufferSize, cts.Token);
+            var server = new Server(new IPEndPoint(IPAddress.Any, 9090), null, maxBufferPoolSize, maxBufferSize, cts.Token);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();

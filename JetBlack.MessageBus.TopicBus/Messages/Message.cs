@@ -28,6 +28,12 @@ namespace JetBlack.MessageBus.TopicBus.Messages
                     return NotificationRequest.ReadBody(stream);
                 case MessageType.SubscriptionRequest:
                     return SubscriptionRequest.ReadBody(stream);
+                case MessageType.AuthenticationRequest:
+                    return AuthenticationRequest.ReadBody(stream);
+                case MessageType.ForwardedAuthenticationRequest:
+                    return ForwardedAuthenticationRequest.ReadBody(stream);
+                case MessageType.AuthenticationResponse:
+                    return AuthenticationResponse.ReadBody(stream);
                 default:
                     throw new InvalidDataException("unknown message type");
             }

@@ -15,10 +15,11 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
 
-        public Interactor(Socket socket, int id, BufferManager bufferManager, CancellationToken token)
+        public Interactor(Socket socket, int id, bool isAuthenticationRequired, BufferManager bufferManager, CancellationToken token)
         {
             _socket = socket;
             Id = id;
+            AuthenticationStatus = isAuthenticationRequired ? AuthenticationStatus.Required : AuthenticationStatus.None;
             _bufferManager = bufferManager;
             _messageObserver = socket.ToMessageObserver(_bufferManager, token);
         }
@@ -48,6 +49,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _socket; }
         }
 
+        public AuthenticationStatus AuthenticationStatus { get; set; }
+
+        public byte[] Identity { get; set; }
+
         public override string ToString()
         {
             return string.Format("{0}/{1}", Id, RemoteEndPoint);
@@ -71,6 +76,16 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public int CompareTo(Interactor other)
         {
             return (other == null ? 1 : Id - other.Id);
+        }
+
+        public static bool operator ==(Interactor a, Interactor b)
+        {
+            return (ReferenceEquals(a,null) && ReferenceEquals(b, null)) || (!ReferenceEquals(a, null) && a.Equals(b));
+        }
+
+        public static bool operator !=(Interactor a, Interactor b)
+        {
+            return !(a == b);
         }
 
         public void Dispose()

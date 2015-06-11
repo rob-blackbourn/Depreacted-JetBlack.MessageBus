@@ -40,5 +40,4 @@ namespace JetBlack.MessageBus.TopicBus.Messages
             return string.Format("{0}, Topic={1}, IsImage={2}, Data={3}", base.ToString(), Topic.ToFormattedString(), IsImage, Data.ToFormattedString());
         }
     }
-
 }

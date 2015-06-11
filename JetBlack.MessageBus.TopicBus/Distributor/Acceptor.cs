@@ -13,17 +13,17 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private int _nextId;
         private readonly BufferManager _bufferManager;
 
-        public Acceptor(int maxBufferPoolSize, int maxBufferSize)
+        public Acceptor(BufferManager bufferManager)
         {
-            _bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
+            _bufferManager = bufferManager;
         }
 
-        public IObservable<Interactor> ToObservable(IPEndPoint endPoint, CancellationToken token)
+        public IObservable<Interactor> ToObservable(IPEndPoint endPoint, bool isAuthenticationRequired, CancellationToken token)
         {
             return Observable.Create<Interactor>(observer =>
                 endPoint.ToListenerObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
-                    .Subscribe(socket => observer.OnNext(new Interactor(socket, _nextId++, _bufferManager, token))));
+                    .Subscribe(socket => observer.OnNext(new Interactor(socket, _nextId++, isAuthenticationRequired, _bufferManager, token))));
         }
     }
 }
