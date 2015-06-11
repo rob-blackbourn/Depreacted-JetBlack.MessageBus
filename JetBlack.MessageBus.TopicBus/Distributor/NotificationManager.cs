@@ -51,9 +51,9 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _forwardedSubscriptionRequests; }
         }
 
-        public void ForwardSubscription(Interactor subscriber, string topic, bool isAdd)
+        public void ForwardSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
         {
-            _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(subscriber.Id, topic, isAdd));
+            _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(subscriber.Id, subscriptionRequest.Topic, subscriptionRequest.IsAdd));
         }
 
         public void RequestNotification(Interactor notifiable, NotificationRequest notificationRequest)
@@ -118,7 +118,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _newNotificationRequests.OnNext(SourceMessage.Create(notifiable, topicRegex));
         }
 
-        public void RemoveNotificationRequest(Interactor notifiable, string topicPattern)
+        private void RemoveNotificationRequest(Interactor notifiable, string topicPattern)
         {
             // Does this topic pattern have any notifiable interactors?
             ISet<Interactor> notifiables;

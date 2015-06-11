@@ -15,12 +15,15 @@ namespace JetBlack.MessageBus.Examples.TopicBusPublisher
         {
             log4net.Config.XmlConfigurator.Configure();
 
+            const int maxBufferPoolSize = 100;
+            const int maxBufferSize = 100000;
+
             new IPEndPoint(IPAddress.Loopback, 9090)
                 .ToConnectObservable()
                 .Subscribe(tcpClient =>
                 {
                     var cts = new CancellationTokenSource();
-                    var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), TaskPoolScheduler.Default, cts.Token);
+                    var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
                     client.Publish(
                         "LSE.VOD",
                         true,

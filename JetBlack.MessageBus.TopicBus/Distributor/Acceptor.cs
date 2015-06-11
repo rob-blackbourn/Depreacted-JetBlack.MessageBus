@@ -10,11 +10,13 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 {
     internal class Acceptor
     {
-        private const int MaxBufferPoolSize = 100;
-        private const int MaxBufferSize = 100000;
-
         private int _nextId;
-        private readonly BufferManager _bufferManager = BufferManager.CreateBufferManager(MaxBufferPoolSize, MaxBufferSize);
+        private readonly BufferManager _bufferManager;
+
+        public Acceptor(int maxBufferPoolSize, int maxBufferSize)
+        {
+            _bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
+        }
 
         public IObservable<Interactor> ToObservable(IPEndPoint endPoint, CancellationToken token)
         {

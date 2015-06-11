@@ -51,6 +51,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             {
                 case MessageType.SubscriptionRequest:
                     _subscriptionManager.RequestSubscription(sender, (SubscriptionRequest)message);
+                    _notificationManager.ForwardSubscription(sender, (SubscriptionRequest)message);
                     break;
 
                 case MessageType.MulticastData:

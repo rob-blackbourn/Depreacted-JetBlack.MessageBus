@@ -64,8 +64,6 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             Log.DebugFormat("RequestSubscription(sender={0}, request={1})", subscriber, subscriptionRequest);
 
             _subscriptionRequests.OnNext(SourceMessage.Create(subscriber, subscriptionRequest));
-
-            _notificationManager.ForwardSubscription(subscriber, subscriptionRequest.Topic, subscriptionRequest.IsAdd);
         }
 
         private void OnFaultedInteractor(Interactor interactor, Exception error)
@@ -95,8 +93,8 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 _cache.Remove(topic);
 
             // Inform those interested that this interactor is no longer subscribed to these topics.
-            foreach (var topic in topicsSubscribedTo)
-                _notificationManager.ForwardSubscription(interactor, topic, false);
+            foreach (var subscriptionRequest in topicsSubscribedTo.Select(topic => new SubscriptionRequest(topic, false)))
+                _notificationManager.ForwardSubscription(interactor, subscriptionRequest);
         }
 
         private void OnUnicastDataPublished(Interactor publisher, UnicastData unicastData)

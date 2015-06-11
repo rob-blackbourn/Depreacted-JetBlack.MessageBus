@@ -20,13 +20,14 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
         {
             log4net.Config.XmlConfigurator.Configure();
 
-            log4net.Config.XmlConfigurator.Configure();
+            const int maxBufferPoolSize = 100;
+            const int maxBufferSize = 100000;
 
             var cts = new CancellationTokenSource();
 
             new IPEndPoint(IPAddress.Loopback, 9090).ToConnectObservable()
                 .ObserveOn(TaskPoolScheduler.Default)
-                .Subscribe(socket => CreatePublisher(socket, TaskPoolScheduler.Default, cts.Token));
+                .Subscribe(socket => CreatePublisher(socket, maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token));
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
@@ -34,9 +35,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
             cts.Cancel();
         }
 
-        private static void CreatePublisher(Socket socket, IScheduler publishScheduler, CancellationToken token)
+        private static void CreatePublisher(Socket socket, int maxBufferPoolSize, int maxBufferSize, IScheduler publishScheduler, CancellationToken token)
         {
-            var cachingPublisher = new CachingPublisher<JObject, JToken>(socket, new JsonEncoder<JObject>(), TaskPoolScheduler.Default, token);
+            var cachingPublisher = new CachingPublisher<JObject, JToken>(socket, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token);
 
             // Prepare some data.
             var marketData = new Dictionary<string, JObject>()

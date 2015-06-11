@@ -19,6 +19,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
         {
             log4net.Config.XmlConfigurator.Configure();
 
+            const int maxBufferPoolSize = 100;
+            const int maxBufferSize = 100000;
+
             var cts = new CancellationTokenSource();
 
             new IPEndPoint(IPAddress.Loopback, 9090)
@@ -27,7 +30,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
                 .Subscribe(
                     tcpClient =>
                     {
-                        var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), TaskPoolScheduler.Default, cts.Token);
+                        var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
                         client.OnDataReceived += OnDataReceived;
                         client.AddSubscription("LSE.VOD");
                         client.AddSubscription("LSE.TSCO");

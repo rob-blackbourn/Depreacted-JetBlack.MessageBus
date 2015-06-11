@@ -13,8 +13,8 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         private readonly Cache _cache;
         private readonly object _gate = new Object();
 
-        public CachingPublisher(Socket socket, IByteEncoder<T> byteEncoder, IScheduler scheduler, CancellationToken token)
-            : base(socket, byteEncoder, scheduler, token)
+        public CachingPublisher(Socket socket, IByteEncoder<T> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+            : base(socket, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token)
         {
             _cache = new Cache(this);
             OnForwardedSubscription += (sender, args) =>
