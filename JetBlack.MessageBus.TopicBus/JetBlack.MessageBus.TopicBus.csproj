@@ -56,11 +56,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapters\AuthenticationResponseEventArgs.cs" />
-    <Compile Include="Adapters\Authenticator.cs" />
+    <Compile Include="Adapters\AuthenticatorAcceptor.cs" />
     <Compile Include="Adapters\CachingPublisher.cs" />
     <Compile Include="Adapters\Client.cs" />
+    <Compile Include="Adapters\ClientAuthenticator.cs" />
     <Compile Include="Adapters\DataReceivedEventArgs.cs" />
     <Compile Include="Adapters\ForwardedSubscriptionEventArgs.cs" />
+    <Compile Include="Adapters\IAuthenticationProvider.cs" />
     <Compile Include="Adapters\TypedClient.cs" />
     <Compile Include="Distributor\Acceptor.cs" />
     <Compile Include="Distributor\Interactor.cs" />
