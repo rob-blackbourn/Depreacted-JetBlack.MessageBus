@@ -9,6 +9,7 @@
         SubscriptionRequest,
         AuthenticationRequest,
         ForwardedAuthenticationRequest,
-        AuthenticationResponse
+        AuthenticationResponse,
+        ForwardedAuthenticationResponse
     }
 }

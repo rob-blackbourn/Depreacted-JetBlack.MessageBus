@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.ServiceModel.Channels;
 using System.Threading;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
@@ -24,23 +22,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly ISubject<SourceMessage<Exception>> _faultedInteractors = new Subject<SourceMessage<Exception>>();
         private readonly ISubject<AuthenticationResponse> _authenticationResponses = new Subject<AuthenticationResponse>();
 
-        public InteractorManager(Socket authenticatorSocket, BufferManager bufferManager, CancellationToken token)
+        public InteractorManager(Interactor authenticator)
         {
             var scheduler = new EventLoopScheduler();
 
             _closedInteractors.ObserveOn(scheduler).Subscribe(RemoveInteractor);
             _faultedInteractors.ObserveOn(scheduler).Subscribe(FaultedInteractor);
 
-            if (authenticatorSocket == null)
-            {
-                _authenticator = null;
-                _authenticatorDisposable = Disposable.Empty;
-            }
-            else
-            {
-                _authenticator = new Interactor(authenticatorSocket, -1, false, bufferManager, token);
-                _authenticatorDisposable = new CompositeDisposable(_authenticator.ToObservable().Subscribe(OnAuthenticatorMessage, OnAuthenticatorError), _authenticator);
-            }
+            _authenticator = authenticator;
+
+            _authenticatorDisposable =
+                authenticator == null
+                    ? Disposable.Empty
+                    : new CompositeDisposable(_authenticator.ToObservable().Subscribe(OnAuthenticatorMessage, OnAuthenticatorError), _authenticator);
 
             _authenticationResponses.ObserveOn(scheduler).Subscribe(AuthenticateClient);
         }
@@ -85,7 +79,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public void OnAuthenticationRequest(Interactor client, AuthenticationRequest authenticationRequest)
         {
-            client.AuthenticationStatus = AuthenticationStatus.Requested;
+            client.Status = AuthenticationStatus.Requested;
             _authenticator.SendMessage(new ForwardedAuthenticationRequest(client.Id, authenticationRequest.Data));
         }
 
@@ -105,19 +99,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             if (!_interactors.TryGetValue(authenticationResponse.ClientId, out client))
                 return;
 
-            switch (authenticationResponse.AuthenticationStatus)
+            switch (authenticationResponse.Status)
             {
                 case AuthenticationStatus.Requested:
                     client.SendMessage(authenticationResponse);
                     break;
                 case AuthenticationStatus.Accepted:
-                    client.AuthenticationStatus = AuthenticationStatus.Accepted;
+                    client.Status = AuthenticationStatus.Accepted;
                     client.Identity = authenticationResponse.Data;
-                    client.SendMessage(authenticationResponse);
+                    client.SendMessage(new ForwardedAuthenticationResponse(authenticationResponse.Status, authenticationResponse.Data));
                     break;
                 case AuthenticationStatus.Rejected:
-                    client.AuthenticationStatus = AuthenticationStatus.Rejected;
-                    client.SendMessage(authenticationResponse);
+                    client.Status = AuthenticationStatus.Rejected;
+                    client.SendMessage(new ForwardedAuthenticationResponse(authenticationResponse.Status, authenticationResponse.Data));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

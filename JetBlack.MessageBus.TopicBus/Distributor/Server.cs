@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.Net.Sockets;
 using System.ServiceModel.Channels;
 using System.Threading;
 using JetBlack.MessageBus.Common.Network;
@@ -12,25 +11,27 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Market _market;
+        private readonly Market _market;
 
         public Server(IPEndPoint serverEndPoint, IPEndPoint authenticatorEndpoint, int maxBufferPoolSize, int maxBufferSize, CancellationToken token)
         {
             Log.Info("Starting server");
 
+            var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
+            var acceptor = new Acceptor(bufferManager);
+
+            Market market = null;
+
             if (authenticatorEndpoint == null)
-                Initialise(serverEndPoint, null, maxBufferPoolSize, maxBufferSize, token);
+                market = new Market(acceptor.ToObservable(serverEndPoint, false, token), null);
             else
                 authenticatorEndpoint.ToConnectObservable()
                     .Subscribe(
-                        socket => Initialise(serverEndPoint, socket, maxBufferPoolSize, maxBufferSize, token),
+                        socket => market = new Market(acceptor.ToObservable(serverEndPoint, true, token), new Interactor(socket, -1, false, bufferManager, token)),
                         error => { throw new ApplicationException("Failed to connect to authenticator", error); },
                         token);
-        }
 
-        private void Initialise(IPEndPoint serverEndPoint, Socket authenticatorSocket, int maxBufferPoolSize, int maxBufferSize, CancellationToken token)
-        {
-            _market = new Market(serverEndPoint, authenticatorSocket, BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize), token);
+            _market = market;
         }
 
         public void Dispose()

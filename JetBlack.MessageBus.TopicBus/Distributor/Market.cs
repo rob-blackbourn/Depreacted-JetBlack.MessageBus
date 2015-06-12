@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Net;
-using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.ServiceModel.Channels;
@@ -23,17 +21,17 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly NotificationManager _notificationManager;
         private readonly IScheduler _scheduler;
 
-        public Market(IPEndPoint endPoint, Socket authenticatorSocket, BufferManager bufferManager, CancellationToken token)
+        public Market(IObservable<Interactor> listenerObservable, Interactor authenticator)
         {
-            _isAuthenticationRequired = authenticatorSocket != null;
-            _interactorManager = new InteractorManager(authenticatorSocket, bufferManager, token);
+            _isAuthenticationRequired = authenticator != null;
+            _interactorManager = new InteractorManager(authenticator);
             _notificationManager = new NotificationManager(_interactorManager);
             _publisherManager = new PublisherManager(_interactorManager);
             _subscriptionManager = new SubscriptionManager(_interactorManager, _notificationManager, _publisherManager);
 
             _scheduler = new EventLoopScheduler();
 
-            _listenerDisposable = new Acceptor(bufferManager).ToObservable(endPoint, _isAuthenticationRequired, token)
+            _listenerDisposable = listenerObservable
                 .ObserveOn(_scheduler)
                 .Subscribe(AddInteractor);
         }
@@ -56,7 +54,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         {
             Log.DebugFormat("OnMessage(sender={0}, message={1}", sender, message);
 
-            if (_isAuthenticationRequired && sender.AuthenticationStatus != AuthenticationStatus.Accepted)
+            if (_isAuthenticationRequired && sender.Status != AuthenticationStatus.Accepted)
             {
                 switch (message.MessageType)
                 {

@@ -34,6 +34,8 @@ namespace JetBlack.MessageBus.TopicBus.Messages
                     return ForwardedAuthenticationRequest.ReadBody(stream);
                 case MessageType.AuthenticationResponse:
                     return AuthenticationResponse.ReadBody(stream);
+                case MessageType.ForwardedAuthenticationResponse:
+                    return ForwardedAuthenticationResponse.ReadBody(stream);
                 default:
                     throw new InvalidDataException("unknown message type");
             }

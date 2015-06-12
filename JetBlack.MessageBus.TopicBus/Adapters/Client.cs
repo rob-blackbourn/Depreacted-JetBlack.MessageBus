@@ -13,6 +13,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
     {
         public event EventHandler<DataReceivedEventArgs<T>> OnDataReceived;
         public event EventHandler<ForwardedSubscriptionEventArgs> OnForwardedSubscription;
+        public event EventHandler<AuthenticationResponseEventArgs<T>> OnAuthenticationResponse;
 
         private readonly IByteEncoder<T> _byteEncoder;
         private readonly IObserver<Message> _messageObserver;
@@ -37,6 +38,9 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     break;
                 case MessageType.ForwardedSubscriptionRequest:
                     RaiseOnForwardedSubscriptionRequest((ForwardedSubscriptionRequest) message);
+                    break;
+                case MessageType.ForwardedAuthenticationResponse:
+                    RaiseOnAuthenticationResponse((ForwardedAuthenticationResponse) message);
                     break;
                 default:
                     throw new ArgumentException("invalid message type");
@@ -73,6 +77,11 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             _messageObserver.OnNext(new NotificationRequest(topicPattern, false));
         }
 
+        public void RequestAuthentication(T data)
+        {
+            _messageObserver.OnNext(new AuthenticationRequest(_byteEncoder.Encode(data)));
+        }
+
         private void RaiseOnForwardedSubscriptionRequest(ForwardedSubscriptionRequest message)
         {
             var handler = OnForwardedSubscription;
@@ -95,6 +104,13 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             var handler = OnDataReceived;
             if (handler != null)
                 handler(this, new DataReceivedEventArgs<T>(topic, data, isImage));
+        }
+
+        private void RaiseOnAuthenticationResponse(ForwardedAuthenticationResponse forwardedAuthenticationResponse)
+        {
+            var handler = OnAuthenticationResponse;
+            if (handler != null)
+                OnAuthenticationResponse(this, new AuthenticationResponseEventArgs<T>(forwardedAuthenticationResponse.Status, _byteEncoder.Decode(forwardedAuthenticationResponse.Data)));
         }
     }
 }

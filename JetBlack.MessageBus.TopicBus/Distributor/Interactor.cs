@@ -19,7 +19,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         {
             _socket = socket;
             Id = id;
-            AuthenticationStatus = isAuthenticationRequired ? AuthenticationStatus.Required : AuthenticationStatus.None;
+            Status = isAuthenticationRequired ? AuthenticationStatus.Required : AuthenticationStatus.None;
             _bufferManager = bufferManager;
             _messageObserver = socket.ToMessageObserver(_bufferManager, token);
         }
@@ -49,7 +49,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _socket; }
         }
 
-        public AuthenticationStatus AuthenticationStatus { get; set; }
+        public AuthenticationStatus Status { get; set; }
 
         public byte[] Identity { get; set; }
 
