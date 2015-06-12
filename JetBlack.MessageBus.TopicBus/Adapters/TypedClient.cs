@@ -7,17 +7,27 @@ using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class TypedClient<TData> : Client
+    public class TypedClient<TData> : TypedClient<TData, TData>
+    {
+        public TypedClient(Socket socket, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+            : base(socket, byteEncoder, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token)
+        {
+        }
+    }
+
+    public class TypedClient<TData, TAuthenticationData> : Client
     {
         public event EventHandler<DataReceivedEventArgs<TData>> OnDataReceived;
-        public event EventHandler<AuthenticationResponseEventArgs<TData>> OnAuthenticationResponse;
+        public event EventHandler<AuthenticationResponseEventArgs<TAuthenticationData>> OnAuthenticationResponse;
 
         private readonly IByteEncoder<TData> _byteEncoder;
+        private readonly IByteEncoder<TAuthenticationData> _authenticationByteEncoder;
 
-        public TypedClient(Socket socket, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        public TypedClient(Socket socket, IByteEncoder<TData> byteEncoder, IByteEncoder<TAuthenticationData> authenticationByteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
             : base(socket, maxBufferPoolSize, maxBufferSize, scheduler, token)
         {
             _byteEncoder = byteEncoder;
+            _authenticationByteEncoder = authenticationByteEncoder;
         }
 
         public void Send(int clientId, string topic, bool isImage, TData data)
@@ -46,7 +56,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         {
             var handler = OnAuthenticationResponse;
             if (handler != null)
-                OnAuthenticationResponse(this, new AuthenticationResponseEventArgs<TData>(status, _byteEncoder.Decode(data)));
+                OnAuthenticationResponse(this, new AuthenticationResponseEventArgs<TAuthenticationData>(status, _authenticationByteEncoder.Decode(data)));
         }
     }
 }
