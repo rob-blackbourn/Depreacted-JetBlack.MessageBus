@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Threading;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
-using Message = JetBlack.MessageBus.TopicBus.Messages.Message;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
@@ -15,14 +12,13 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly Interactor _authenticator;
+        private readonly ISubject<ForwardedAuthenticationRequest,AuthenticationResponse> _authenticator;
         private readonly IDisposable _authenticatorDisposable;
         private readonly IDictionary<int, Interactor> _interactors = new Dictionary<int, Interactor>();
         private readonly ISubject<Interactor> _closedInteractors = new Subject<Interactor>();
         private readonly ISubject<SourceMessage<Exception>> _faultedInteractors = new Subject<SourceMessage<Exception>>();
-        private readonly ISubject<AuthenticationResponse> _authenticationResponses = new Subject<AuthenticationResponse>();
 
-        public InteractorManager(Interactor authenticator)
+        public InteractorManager(ISubject<ForwardedAuthenticationRequest,AuthenticationResponse> authenticator)
         {
             var scheduler = new EventLoopScheduler();
 
@@ -31,12 +27,9 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
             _authenticator = authenticator;
 
-            _authenticatorDisposable =
-                authenticator == null
-                    ? Disposable.Empty
-                    : new CompositeDisposable(_authenticator.ToObservable().Subscribe(OnAuthenticatorMessage, OnAuthenticatorError), _authenticator);
-
-            _authenticationResponses.ObserveOn(scheduler).Subscribe(AuthenticateClient);
+            _authenticatorDisposable = _authenticator
+                .ObserveOn(scheduler)
+                .Subscribe(OnAuthenticatorResponse, OnAuthenticatorError, OnAuthenticatorCompleted);
         }
 
         public IObservable<Interactor> ClosedInteractors
@@ -80,20 +73,20 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public void OnAuthenticationRequest(Interactor client, AuthenticationRequest authenticationRequest)
         {
             client.Status = AuthenticationStatus.Requested;
-            _authenticator.SendMessage(new ForwardedAuthenticationRequest(client.Id, authenticationRequest.Data));
-        }
-
-        private void OnAuthenticatorMessage(Message message)
-        {
-            if (message.MessageType == MessageType.AuthenticationResponse)
-                _authenticationResponses.OnNext((AuthenticationResponse)message);
+            _authenticator.OnNext(new ForwardedAuthenticationRequest(client.Id, authenticationRequest.Data));
         }
 
         private void OnAuthenticatorError(Exception error)
         {
+            Log.Error("The authenticator has faulted.", error);
         }
 
-        private void AuthenticateClient(AuthenticationResponse authenticationResponse)
+        private void OnAuthenticatorCompleted()
+        {
+            Log.InfoFormat("The authenticator has completed.");
+        }
+
+        private void OnAuthenticatorResponse(AuthenticationResponse authenticationResponse)
         {
             Interactor client;
             if (!_interactors.TryGetValue(authenticationResponse.ClientId, out client))

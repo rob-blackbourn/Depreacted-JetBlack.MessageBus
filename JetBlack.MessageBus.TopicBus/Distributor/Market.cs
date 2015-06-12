@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
 using Message = JetBlack.MessageBus.TopicBus.Messages.Message;
@@ -19,7 +20,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly NotificationManager _notificationManager;
         private readonly IScheduler _scheduler;
 
-        public Market(IObservable<Interactor> listenerObservable, Interactor authenticator)
+        public Market(IObservable<Interactor> listenerObservable, ISubject<ForwardedAuthenticationRequest, AuthenticationResponse> authenticator)
         {
             _isAuthenticationRequired = authenticator != null;
             _interactorManager = new InteractorManager(authenticator);
