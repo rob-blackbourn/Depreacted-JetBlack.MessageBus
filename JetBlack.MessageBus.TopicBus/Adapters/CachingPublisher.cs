@@ -1,23 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
-using System.Reactive.Concurrency;
-using System.Threading;
-using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<TKey, TValue> : TypedClient<IDictionary<TKey,TValue>>
+    public class CachingPublisher<TData, TKey, TValue> where TData:IDictionary<TKey,TValue>
     {
+        private readonly TypedClient<TData> _client;
         private readonly Cache _cache;
         private readonly object _gate = new Object();
 
-        public CachingPublisher(Socket socket, IByteEncoder<IDictionary<TKey,TValue>> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
-            : base(socket, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token)
+        public CachingPublisher(TypedClient<TData> client)
         {
-            _cache = new Cache(this);
-            OnForwardedSubscription += (sender, args) =>
+            _client = client;
+            _cache = new Cache(client);
+            client.OnForwardedSubscription += (sender, args) =>
             {
                 lock (_gate)
                 {
@@ -29,7 +26,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             };
         }
 
-        public void Publish(string topic, IDictionary<TKey,TValue> data)
+        public void Publish(string topic, TData data)
         {
             lock (_gate)
             {
@@ -37,11 +34,21 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             }
         }
 
+        public void AddNotification(string topicPattern)
+        {
+            _client.AddNotification(topicPattern);
+        }
+
+        public void RemoveNotification(string topicPattern)
+        {
+            _client.RemoveNotification(topicPattern);
+        }
+
         class Cache : Dictionary<string, CacheItem>
         {
-            private readonly TypedClient<IDictionary<TKey,TValue>> _client;
+            private readonly TypedClient<TData> _client;
 
-            public Cache(TypedClient<IDictionary<TKey,TValue>> client)
+            public Cache(TypedClient<TData> client)
             {
                 _client = client;
             }
@@ -60,7 +67,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     cacheItem.ClientStates.Add(clientId, false);
                 }
 
-                if (!cacheItem.ClientStates[clientId] && cacheItem.Data == null)
+                if (!cacheItem.ClientStates[clientId] && Equals(cacheItem.Data, default(TData)))
                 {
                     // Send the image and mark this client appropriately.
                     cacheItem.ClientStates[clientId] = true;
@@ -83,11 +90,11 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                 cacheItem.ClientStates.Remove(clientId);
 
                 // If there are no clients and no data remove the item.
-                if (cacheItem.ClientStates.Count == 0 && cacheItem.Data == null)
+                if (cacheItem.ClientStates.Count == 0 && Equals(cacheItem.Data, default(TData)))
                     Remove(topic);
             }
 
-            public void Publish(string topic, IDictionary<TKey,TValue> data)
+            public void Publish(string topic, TData data)
             {
                 // If the topic is not in the cache add it.
                 CacheItem cacheItem;
@@ -95,7 +102,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     Add(topic, cacheItem = new CacheItem { Data = data });
 
                 // Bring the cache data up to date.
-                if (Equals(data, default(IDictionary<string,TValue>)) || cacheItem.Data == null)
+                if (Equals(data, default(IDictionary<string,TValue>)) || Equals(cacheItem.Data, default(TData)))
                     cacheItem.Data = data; // overwrite
                 else // update
                     foreach (var item in data)
@@ -120,7 +127,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             // Remember whether this client id has already received the image.
             public readonly Dictionary<int, bool> ClientStates = new Dictionary<int, bool>();
             // The cache of data constituting the image.
-            public IDictionary<TKey,TValue> Data;
+            public TData Data;
         }
     }
 }
