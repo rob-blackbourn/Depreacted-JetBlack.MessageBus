@@ -8,12 +8,12 @@ using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<T, TValue> : TypedClient<T> where T:IDictionary<string,TValue>
+    public class CachingPublisher<TData, TValue> : TypedClient<TData> where TData:IDictionary<string, TValue>
     {
         private readonly Cache _cache;
         private readonly object _gate = new Object();
 
-        public CachingPublisher(Socket socket, IByteEncoder<T> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        public CachingPublisher(Socket socket, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
             : base(socket, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token)
         {
             _cache = new Cache(this);
@@ -29,7 +29,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             };
         }
 
-        public void Publish(string topic, T data)
+        public void Publish(string topic, TData data)
         {
             lock (_gate)
             {
@@ -39,9 +39,9 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
         class Cache : Dictionary<string, CacheItem>
         {
-            private readonly TypedClient<T> _client;
+            private readonly TypedClient<TData> _client;
 
-            public Cache(TypedClient<T> client)
+            public Cache(TypedClient<TData> client)
             {
                 _client = client;
             }
@@ -60,7 +60,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     cacheItem.ClientStates.Add(clientId, false);
                 }
 
-                if (!cacheItem.ClientStates[clientId] && !Equals(cacheItem.Data, default(T)))
+                if (!cacheItem.ClientStates[clientId] && !Equals(cacheItem.Data, default(TData)))
                 {
                     // Send the image and mark this client appropriately.
                     cacheItem.ClientStates[clientId] = true;
@@ -83,11 +83,11 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                 cacheItem.ClientStates.Remove(clientId);
 
                 // If there are no clients and no data remove the item.
-                if (cacheItem.ClientStates.Count == 0 && Equals(cacheItem.Data, default(T)))
+                if (cacheItem.ClientStates.Count == 0 && Equals(cacheItem.Data, default(TData)))
                     Remove(topic);
             }
 
-            public void Publish(string topic, T data)
+            public void Publish(string topic, TData data)
             {
                 // If the topic is not in the cache add it.
                 CacheItem cacheItem;
@@ -95,7 +95,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     Add(topic, cacheItem = new CacheItem { Data = data });
 
                 // Bring the cache data up to date.
-                if (Equals(data, default(T)) || Equals(cacheItem.Data, default(T)))
+                if (Equals(data, default(TData)) || Equals(cacheItem.Data, default(TData)))
                     cacheItem.Data = data; // overwrite
                 else // update
                     foreach (var item in data)
@@ -120,7 +120,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             // Remember whether this client id has already received the image.
             public readonly Dictionary<int, bool> ClientStates = new Dictionary<int, bool>();
             // The cache of data constituting the image.
-            public T Data;
+            public TData Data;
         }
     }
 }
