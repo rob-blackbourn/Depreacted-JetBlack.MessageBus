@@ -8,12 +8,12 @@ using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<TValue> : TypedClient<IDictionary<string,TValue>>
+    public class CachingPublisher<TKey, TValue> : TypedClient<IDictionary<TKey,TValue>>
     {
         private readonly Cache _cache;
         private readonly object _gate = new Object();
 
-        public CachingPublisher(Socket socket, IByteEncoder<IDictionary<string,TValue>> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        public CachingPublisher(Socket socket, IByteEncoder<IDictionary<TKey,TValue>> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
             : base(socket, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token)
         {
             _cache = new Cache(this);
@@ -29,7 +29,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             };
         }
 
-        public void Publish(string topic, IDictionary<string,TValue> data)
+        public void Publish(string topic, IDictionary<TKey,TValue> data)
         {
             lock (_gate)
             {
@@ -39,9 +39,9 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
         class Cache : Dictionary<string, CacheItem>
         {
-            private readonly TypedClient<IDictionary<string,TValue>> _client;
+            private readonly TypedClient<IDictionary<TKey,TValue>> _client;
 
-            public Cache(TypedClient<IDictionary<string,TValue>> client)
+            public Cache(TypedClient<IDictionary<TKey,TValue>> client)
             {
                 _client = client;
             }
@@ -87,7 +87,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     Remove(topic);
             }
 
-            public void Publish(string topic, IDictionary<string,TValue> data)
+            public void Publish(string topic, IDictionary<TKey,TValue> data)
             {
                 // If the topic is not in the cache add it.
                 CacheItem cacheItem;
@@ -120,7 +120,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             // Remember whether this client id has already received the image.
             public readonly Dictionary<int, bool> ClientStates = new Dictionary<int, bool>();
             // The cache of data constituting the image.
-            public IDictionary<string,TValue> Data;
+            public IDictionary<TKey,TValue> Data;
         }
     }
 }

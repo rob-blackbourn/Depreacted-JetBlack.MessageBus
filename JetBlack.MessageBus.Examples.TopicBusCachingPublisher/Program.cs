@@ -51,7 +51,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 
         private static void CreatePublisher(Socket socket, int maxBufferPoolSize, int maxBufferSize, IScheduler publishScheduler, CancellationToken token)
         {
-            var cachingPublisher = new CachingPublisher<JToken>(socket, new JObjectEncoder(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token);
+            var cachingPublisher = new CachingPublisher<string,JToken>(socket, new JObjectEncoder(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token);
 
             // Prepare some data.
             var marketData = new Dictionary<string, JObject>
@@ -98,7 +98,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
                 ScheduleUpdate(cachingPublisher, item.Key, item.Value, publishScheduler, token);
         }
 
-        private static void ScheduleUpdate(CachingPublisher<JToken> cachingPublisher, string topic, JObject data, IScheduler scheduler, CancellationToken token)
+        private static void ScheduleUpdate(CachingPublisher<string,JToken> cachingPublisher, string topic, JObject data, IScheduler scheduler, CancellationToken token)
         {
             scheduler.Schedule(
                 TimeSpan.FromMilliseconds(10 * Rnd.Next(5, 100)),
@@ -112,7 +112,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
                 });
         }
 
-        private static void PublishUpdate(CachingPublisher<JToken> cachingPublisher, string topic, JObject data)
+        private static void PublishUpdate(CachingPublisher<string,JToken> cachingPublisher, string topic, JObject data)
         {
             // Pevert the data a little.
             var bid = (double) data["BID"];
