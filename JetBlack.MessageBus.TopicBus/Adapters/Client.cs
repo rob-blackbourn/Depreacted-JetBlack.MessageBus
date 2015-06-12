@@ -9,18 +9,14 @@ using BufferManager = System.ServiceModel.Channels.BufferManager;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class Client<T>
+    public abstract class Client
     {
-        public event EventHandler<DataReceivedEventArgs<T>> OnDataReceived;
         public event EventHandler<ForwardedSubscriptionEventArgs> OnForwardedSubscription;
-        public event EventHandler<AuthenticationResponseEventArgs<T>> OnAuthenticationResponse;
 
-        private readonly IByteEncoder<T> _byteEncoder;
         private readonly IObserver<Message> _messageObserver;
 
-        public Client(Socket socket, IByteEncoder<T> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        protected Client(Socket socket, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
         {
-            _byteEncoder = byteEncoder;
             var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
             socket.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
             _messageObserver = socket.ToMessageObserver(bufferManager, token);
@@ -31,16 +27,16 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             switch (message.MessageType)
             {
                 case MessageType.MulticastData:
-                    RaiseOnData((MulticastData) message);
+                    RaiseOnData((MulticastData)message);
                     break;
                 case MessageType.UnicastData:
-                    RaiseOnData((UnicastData) message);
+                    RaiseOnData((UnicastData)message);
                     break;
                 case MessageType.ForwardedSubscriptionRequest:
-                    RaiseOnForwardedSubscriptionRequest((ForwardedSubscriptionRequest) message);
+                    RaiseOnForwardedSubscriptionRequest((ForwardedSubscriptionRequest)message);
                     break;
                 case MessageType.ForwardedAuthenticationResponse:
-                    RaiseOnAuthenticationResponse((ForwardedAuthenticationResponse) message);
+                    RaiseOnAuthenticationResponse((ForwardedAuthenticationResponse)message);
                     break;
                 default:
                     throw new ArgumentException("invalid message type");
@@ -57,29 +53,29 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             _messageObserver.OnNext(new SubscriptionRequest(topic, false));
         }
 
-        public void Send(int clientId, string topic, bool isImage, T data)
+        protected void Send(int clientId, string topic, bool isImage, byte[] data)
         {
-            _messageObserver.OnNext(new UnicastData(clientId, topic, isImage, _byteEncoder.Encode(data)));
+            _messageObserver.OnNext(new UnicastData(clientId, topic, isImage, data));
         }
 
-        public void Publish(string topic, bool isImage, T data)
+        protected void Publish(string topic, bool isImage, byte[] data)
         {
-            _messageObserver.OnNext(new MulticastData(topic, isImage, _byteEncoder.Encode(data)));
+            _messageObserver.OnNext(new MulticastData(topic, isImage, data));
         }
 
-        public virtual void AddNotification(string topicPattern)
+        public void AddNotification(string topicPattern)
         {
             _messageObserver.OnNext(new NotificationRequest(topicPattern, true));
         }
 
-        public virtual void RemoveNotification(string topicPattern)
+        public void RemoveNotification(string topicPattern)
         {
             _messageObserver.OnNext(new NotificationRequest(topicPattern, false));
         }
 
-        public void RequestAuthentication(T data)
+        public void RequestAuthentication(byte[] data)
         {
-            _messageObserver.OnNext(new AuthenticationRequest(_byteEncoder.Encode(data)));
+            _messageObserver.OnNext(new AuthenticationRequest(data));
         }
 
         private void RaiseOnForwardedSubscriptionRequest(ForwardedSubscriptionRequest message)
@@ -91,26 +87,64 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
         private void RaiseOnData(MulticastData message)
         {
-            RaiseOnData(message.Topic, _byteEncoder.Decode(message.Data), false);
+            RaiseOnData(message.Topic, message.Data, false);
         }
 
         private void RaiseOnData(UnicastData message)
         {
-            RaiseOnData(message.Topic, _byteEncoder.Decode(message.Data), true);
+            RaiseOnData(message.Topic, message.Data, true);
         }
 
-        private void RaiseOnData(string topic, T data, bool isImage)
-        {
-            var handler = OnDataReceived;
-            if (handler != null)
-                handler(this, new DataReceivedEventArgs<T>(topic, data, isImage));
-        }
+        protected abstract void RaiseOnData(string topic, byte[] data, bool isImage);
 
         private void RaiseOnAuthenticationResponse(ForwardedAuthenticationResponse forwardedAuthenticationResponse)
         {
+            RaiseOnAuthenticationResponse(forwardedAuthenticationResponse.Status, forwardedAuthenticationResponse.Data);
+        }
+
+        protected abstract void RaiseOnAuthenticationResponse(AuthenticationStatus status, byte[] data);
+    }
+
+    public class Client<T> : Client
+    {
+        public event EventHandler<DataReceivedEventArgs<T>> OnDataReceived;
+        public event EventHandler<AuthenticationResponseEventArgs<T>> OnAuthenticationResponse;
+
+        private readonly IByteEncoder<T> _byteEncoder;
+
+        public Client(Socket socket, IByteEncoder<T> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+            : base(socket, maxBufferPoolSize, maxBufferSize, scheduler, token)
+        {
+            _byteEncoder = byteEncoder;
+        }
+
+        public void Send(int clientId, string topic, bool isImage, T data)
+        {
+            Send(clientId, topic, isImage, _byteEncoder.Encode(data));
+        }
+
+        public void Publish(string topic, bool isImage, T data)
+        {
+            Publish(topic, isImage, _byteEncoder.Encode(data));
+        }
+
+        public void RequestAuthentication(T data)
+        {
+            RequestAuthentication(_byteEncoder.Encode(data));
+        }
+
+        protected override void RaiseOnData(string topic, byte[] data, bool isImage)
+        {
+            var handler = OnDataReceived;
+            if (handler != null)
+                handler(this, new DataReceivedEventArgs<T>(topic, _byteEncoder.Decode(data), isImage));
+        }
+
+        protected override void RaiseOnAuthenticationResponse(AuthenticationStatus status, byte[] data)
+        {
             var handler = OnAuthenticationResponse;
             if (handler != null)
-                OnAuthenticationResponse(this, new AuthenticationResponseEventArgs<T>(forwardedAuthenticationResponse.Status, _byteEncoder.Decode(forwardedAuthenticationResponse.Data)));
+                OnAuthenticationResponse(this, new AuthenticationResponseEventArgs<T>(status, _byteEncoder.Decode(data)));
         }
     }
 }
