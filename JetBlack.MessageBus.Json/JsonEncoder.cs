@@ -4,20 +4,16 @@ using Newtonsoft.Json;
 
 namespace JetBlack.MessageBus.Json
 {
-    public class JsonEncoder<T> : IByteEncoder<T>
+    public class JsonEncoder<TData> : IByteEncoder<TData>
     {
-        public T Decode(byte[] bytes)
+        public TData Decode(byte[] bytes)
         {
-            var s = Encoding.UTF8.GetString(bytes);
-            var obj = JsonConvert.DeserializeObject<T>(s);
-            return obj;
+            return JsonConvert.DeserializeObject<TData>(Encoding.UTF8.GetString(bytes));
         }
 
-        public byte[] Encode(T obj)
+        public byte[] Encode(TData data)
         {
-            var s = JsonConvert.SerializeObject(obj);
-            var bytes = Encoding.UTF8.GetBytes(s);
-            return bytes;
+            return Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data));
         }
     }
 }

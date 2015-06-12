@@ -2,9 +2,9 @@
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class DataReceivedEventArgs<T> : EventArgs
+    public class DataReceivedEventArgs<TData> : EventArgs
     {
-        public DataReceivedEventArgs(string topic, T data, bool isImage)
+        public DataReceivedEventArgs(string topic, TData data, bool isImage)
         {
             IsImage = isImage;
             Data = data;
@@ -12,7 +12,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         }
 
         public string Topic { get; private set; }
-        public T Data { get; private set; }
+        public TData Data { get; private set; }
         public bool IsImage { get; private set; }
     }
 }

@@ -1,8 +1,8 @@
 ﻿namespace JetBlack.MessageBus.Common.IO
 {
-    public interface IByteEncoder<T>
+    public interface IByteEncoder<TData>
     {
-        T Decode(byte[] bytes);
-        byte[] Encode(T obj);
+        TData Decode(byte[] bytes);
+        byte[] Encode(TData data);
     }
 }
