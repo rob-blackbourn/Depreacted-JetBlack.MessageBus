@@ -14,12 +14,13 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly Socket _socket;
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
+        private volatile AuthenticationStatus _status;
 
         public Interactor(Socket socket, int id, bool isAuthenticationRequired, BufferManager bufferManager, CancellationToken token)
         {
             _socket = socket;
             Id = id;
-            Status = isAuthenticationRequired ? AuthenticationStatus.Required : AuthenticationStatus.None;
+            _status = isAuthenticationRequired ? AuthenticationStatus.Required : AuthenticationStatus.None;
             _bufferManager = bufferManager;
             _messageObserver = socket.ToMessageObserver(_bufferManager, token);
         }
@@ -49,7 +50,11 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _socket; }
         }
 
-        public AuthenticationStatus Status { get; set; }
+        public AuthenticationStatus Status
+        {
+            get { return _status; }
+            set { _status = value; }
+        }
 
         public byte[] Identity { get; set; }
 
