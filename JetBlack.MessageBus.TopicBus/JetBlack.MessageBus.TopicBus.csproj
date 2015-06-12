@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapters\AuthenticationResponseEventArgs.cs" />
+    <Compile Include="Adapters\Authenticator.cs" />
     <Compile Include="Adapters\CachingPublisher.cs" />
     <Compile Include="Adapters\Client.cs" />
     <Compile Include="Adapters\DataReceivedEventArgs.cs" />

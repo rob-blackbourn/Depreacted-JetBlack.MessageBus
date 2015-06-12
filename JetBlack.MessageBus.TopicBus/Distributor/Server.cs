@@ -18,16 +18,16 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             Log.Info("Starting server");
 
             var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
-            var acceptor = new Acceptor(bufferManager);
+            var acceptor = new Acceptor(serverEndPoint, bufferManager);
 
             Market market = null;
 
             if (authenticatorEndpoint == null)
-                market = new Market(acceptor.ToObservable(serverEndPoint, false, token), null);
+                market = new Market(acceptor.ToObservable(false, token), null);
             else
                 authenticatorEndpoint.ToConnectObservable()
                     .Subscribe(
-                        socket => market = new Market(acceptor.ToObservable(serverEndPoint, true, token), new Interactor(socket, -1, false, bufferManager, token)),
+                        socket => market = new Market(acceptor.ToObservable(true, token), new Interactor(socket, -1, false, bufferManager, token)),
                         error => { throw new ApplicationException("Failed to connect to authenticator", error); },
                         token);
 

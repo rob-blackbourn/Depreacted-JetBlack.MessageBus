@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.ServiceModel.Channels;
-using System.Threading;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
 using Message = JetBlack.MessageBus.TopicBus.Messages.Message;
