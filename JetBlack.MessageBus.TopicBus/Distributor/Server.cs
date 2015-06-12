@@ -14,13 +14,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private readonly Market _market;
 
-        public Server(IPEndPoint serverEndPoint, ISubject<ForwardedAuthenticationRequest,AuthenticationResponse> authenticator, int maxBufferPoolSize, int maxBufferSize, CancellationToken token)
+        public Server(IPEndPoint serverEndPoint, ISubject<ForwardedAuthenticationRequest,AuthenticationResponse> authenticator, BufferManager bufferManager, CancellationToken token)
         {
             Log.Info("Starting server");
-
-            var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
-            var acceptor = new Acceptor(serverEndPoint, bufferManager);
-            _market = new Market(acceptor.ToObservable(false, token), authenticator);
+            _market = new Market(new Acceptor(serverEndPoint, bufferManager).ToObservable(false, token), authenticator);
         }
 
         public void Dispose()

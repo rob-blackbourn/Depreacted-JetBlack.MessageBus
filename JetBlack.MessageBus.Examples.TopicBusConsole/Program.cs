@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.ServiceModel.Channels;
 using System.Threading;
 using JetBlack.MessageBus.TopicBus.Distributor;
 
@@ -13,9 +14,14 @@ namespace JetBlack.MessageBus.Examples.TopicBusConsole
 
             const int maxBufferPoolSize = 100;
             const int maxBufferSize = 100000;
+            var ipAddress = IPAddress.Any;
+            const int port = 9090;
 
             var cts = new CancellationTokenSource();
-            var server = new Server(new IPEndPoint(IPAddress.Any, 9090), null, maxBufferPoolSize, maxBufferSize, cts.Token);
+            var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
+            var endpoint = new IPEndPoint(ipAddress, port);
+
+            var server = new Server(endpoint, null, bufferManager, cts.Token);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
