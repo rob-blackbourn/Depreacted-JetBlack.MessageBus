@@ -23,7 +23,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusPublisher
                 .Subscribe(tcpClient =>
                 {
                     var cts = new CancellationTokenSource();
-                    var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+                    var client = new TypedClient<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
                     client.Publish(
                         "LSE.VOD",
                         true,

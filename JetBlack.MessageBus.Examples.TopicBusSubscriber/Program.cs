@@ -30,7 +30,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
                 .Subscribe(
                     tcpClient =>
                     {
-                        var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+                        var client = new TypedClient<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
                         client.OnDataReceived += OnDataReceived;
                         client.AddSubscription("LSE.VOD");
                         client.AddSubscription("LSE.TSCO");

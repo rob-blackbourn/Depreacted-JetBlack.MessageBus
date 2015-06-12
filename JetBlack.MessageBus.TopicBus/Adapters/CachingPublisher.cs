@@ -8,7 +8,7 @@ using JetBlack.MessageBus.Common.IO;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<T, TValue> : Client<T> where T:IDictionary<string,TValue>
+    public class CachingPublisher<T, TValue> : TypedClient<T> where T:IDictionary<string,TValue>
     {
         private readonly Cache _cache;
         private readonly object _gate = new Object();
@@ -39,9 +39,9 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
         class Cache : Dictionary<string, CacheItem>
         {
-            private readonly Client<T> _client;
+            private readonly TypedClient<T> _client;
 
-            public Cache(Client<T> client)
+            public Cache(TypedClient<T> client)
             {
                 _client = client;
             }
