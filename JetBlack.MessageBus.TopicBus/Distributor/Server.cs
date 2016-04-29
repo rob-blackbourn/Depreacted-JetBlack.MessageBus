@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Net;
-using System.Reactive.Subjects;
 using System.ServiceModel.Channels;
 using System.Threading;
-using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
@@ -14,10 +12,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private readonly Market _market;
 
-        public Server(IPEndPoint serverEndPoint, ISubject<ForwardedAuthenticationRequest,AuthenticationResponse> authenticator, BufferManager bufferManager, CancellationToken token)
+        public Server(IPEndPoint serverEndPoint, BufferManager bufferManager, CancellationToken token)
         {
             Log.Info("Starting server");
-            _market = new Market(new Acceptor(serverEndPoint, bufferManager).ToObservable(false, token), authenticator);
+            _market = new Market(new Acceptor(serverEndPoint, bufferManager).ToObservable(token));
         }
 
         public void Dispose()

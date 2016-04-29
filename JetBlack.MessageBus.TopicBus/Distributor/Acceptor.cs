@@ -26,12 +26,12 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _bufferManager = bufferManager;
         }
 
-        public IObservable<Interactor> ToObservable(bool isAuthenticationRequired, CancellationToken token)
+        public IObservable<Interactor> ToObservable(CancellationToken token)
         {
             return Observable.Create<Interactor>(observer =>
                 _socket.ToListenerObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
-                    .Subscribe(client => observer.OnNext(new Interactor(client, _nextId++, isAuthenticationRequired, _bufferManager, token))));
+                    .Subscribe(client => observer.OnNext(new Interactor(client, _nextId++, _bufferManager, token))));
         }
 
         private static Socket CreateAndBind(EndPoint endpoint)

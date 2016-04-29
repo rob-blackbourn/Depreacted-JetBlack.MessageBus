@@ -66,11 +66,14 @@
     <Compile Include="Distributor\InteractorManager.cs" />
     <Compile Include="Distributor\Market.cs" />
     <Compile Include="Distributor\NotificationManager.cs" />
+    <Compile Include="Distributor\NotificationMarshaller.cs" />
     <Compile Include="Distributor\PublisherManager.cs" />
+    <Compile Include="Distributor\PublisherMarshaller.cs" />
     <Compile Include="Distributor\Server.cs" />
     <Compile Include="Distributor\SourceMessage.cs" />
     <Compile Include="Distributor\SourceSinkMessage.cs" />
     <Compile Include="Distributor\SubscriptionManager.cs" />
+    <Compile Include="Distributor\SubscriptionMarshaller.cs" />
     <Compile Include="Messages\AuthenticationResponse.cs" />
     <Compile Include="Messages\AuthenticationStatus.cs" />
     <Compile Include="Messages\AuthenticationRequest.cs" />

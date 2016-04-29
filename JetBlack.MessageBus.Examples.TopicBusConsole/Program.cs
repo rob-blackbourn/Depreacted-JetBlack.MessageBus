@@ -21,7 +21,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusConsole
             var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
             var endpoint = new IPEndPoint(ipAddress, port);
 
-            var server = new Server(endpoint, null, bufferManager, cts.Token);
+            var server = new Server(endpoint, bufferManager, cts.Token);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
