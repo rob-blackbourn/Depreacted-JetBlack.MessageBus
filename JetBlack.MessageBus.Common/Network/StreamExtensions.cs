@@ -43,36 +43,6 @@ namespace JetBlack.MessageBus.Common.Network
             });
         }
 
-        public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameStreamObservableOld(this Stream stream, BufferManager bufferManager)
-        {
-            return Observable.Create<DisposableValue<ArraySegment<byte>>>(async (observer, token) =>
-            {
-                var headerBuffer = new byte[sizeof(int)];
-
-                try
-                {
-                    while (!token.IsCancellationRequested)
-                    {
-                        if (await stream.ReadBytesCompletelyAsync(headerBuffer, headerBuffer.Length, token) != headerBuffer.Length)
-                            break;
-                        var length = BitConverter.ToInt32(headerBuffer, 0);
-
-                        var buffer = bufferManager.TakeBuffer(length);
-                        if (await stream.ReadBytesCompletelyAsync(buffer, length, token) != length)
-                            break;
-
-                        observer.OnNext(DisposableValue.Create(new ArraySegment<byte>(buffer, 0, length), Disposable.Create(() => bufferManager.ReturnBuffer(buffer))));
-                    }
-
-                    observer.OnCompleted();
-                }
-                catch (Exception error)
-                {
-                    observer.OnError(error);
-                }
-            });
-        }
-
         private static async Task<int> ReadHeader(this Stream stream, CancellationToken token)
         {
             var headerBuffer = new byte[sizeof(int)];
