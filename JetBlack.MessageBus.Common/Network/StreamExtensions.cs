@@ -21,6 +21,32 @@ namespace JetBlack.MessageBus.Common.Network
         {
             return Observable.Create<DisposableValue<ArraySegment<byte>>>(async (observer, token) =>
             {
+                try
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        var buffer = await stream.ReadHeader(token)
+                            .ContinueWith(task => stream.ReadBody(task.Result, bufferManager, token), token);
+
+                        if (buffer.Result == default(DisposableValue<ArraySegment<byte>>))
+                            break;
+
+                        observer.OnNext(buffer.Result);
+                    }
+
+                    observer.OnCompleted();
+                }
+                catch (Exception error)
+                {
+                    observer.OnError(error);
+                }
+            });
+        }
+
+        public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameStreamObservableOld(this Stream stream, BufferManager bufferManager)
+        {
+            return Observable.Create<DisposableValue<ArraySegment<byte>>>(async (observer, token) =>
+            {
                 var headerBuffer = new byte[sizeof(int)];
 
                 try
@@ -45,6 +71,28 @@ namespace JetBlack.MessageBus.Common.Network
                     observer.OnError(error);
                 }
             });
+        }
+
+        private static async Task<int> ReadHeader(this Stream stream, CancellationToken token)
+        {
+            var headerBuffer = new byte[sizeof(int)];
+
+            if (await stream.ReadBytesCompletelyAsync(headerBuffer, headerBuffer.Length, token) != headerBuffer.Length)
+                return -1;
+
+            return BitConverter.ToInt32(headerBuffer, 0);
+        }
+
+        private static async Task<DisposableValue<ArraySegment<byte>>> ReadBody(this Stream stream, int length, BufferManager bufferManager, CancellationToken token)
+        {
+            if (length <= 0)
+                return default(DisposableValue<ArraySegment<byte>>);
+
+            var buffer = bufferManager.TakeBuffer(length);
+            if (await stream.ReadBytesCompletelyAsync(buffer, length, token) != length)
+                return default(DisposableValue<ArraySegment<byte>>);
+
+            return DisposableValue.Create(new ArraySegment<byte>(buffer, 0, length), Disposable.Create(() => bufferManager.ReturnBuffer(buffer)));
         }
 
         public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameStreamObserver(this Stream stream, CancellationToken token)
