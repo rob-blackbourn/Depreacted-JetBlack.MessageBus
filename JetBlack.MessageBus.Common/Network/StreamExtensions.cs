@@ -52,9 +52,13 @@ namespace JetBlack.MessageBus.Common.Network
             return Observer.Create<DisposableValue<ArraySegment<byte>>>(async disposableBuffer =>
             {
                 var headerBuffer = BitConverter.GetBytes(disposableBuffer.Value.Count);
-                await stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token);
-                await stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token);
-                stream.Flush();
+
+                await Task.WhenAll(new Task[]
+                    {
+                        stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token),
+                        stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token),
+                        stream.FlushAsync(token)
+                    });
             });
         }
 
