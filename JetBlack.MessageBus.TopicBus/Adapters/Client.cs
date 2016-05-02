@@ -14,11 +14,12 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
         private readonly IObserver<Message> _messageObserver;
 
-        protected Client(Socket socket, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        protected Client(TcpClient tcpClient, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
         {
+            // TODO: Howdo we close the client if we don't store the client?
             var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
-            socket.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
-            _messageObserver = socket.ToMessageObserver(bufferManager, token);
+            tcpClient.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
+            _messageObserver = tcpClient.ToMessageObserver(bufferManager, token);
         }
 
         private void Dispatch(Message message)
@@ -26,16 +27,13 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             switch (message.MessageType)
             {
                 case MessageType.MulticastData:
-                    RaiseOnData((MulticastData)message);
+                    RaiseOnData(((MulticastData)message).Topic, ((MulticastData)message).Data, false);
                     break;
                 case MessageType.UnicastData:
-                    RaiseOnData((UnicastData)message);
+                    RaiseOnData(((UnicastData)message).Topic, ((UnicastData)message).Data, true);
                     break;
                 case MessageType.ForwardedSubscriptionRequest:
                     RaiseOnForwardedSubscriptionRequest((ForwardedSubscriptionRequest)message);
-                    break;
-                case MessageType.ForwardedAuthenticationResponse:
-                    RaiseOnAuthenticationResponse((ForwardedAuthenticationResponse)message);
                     break;
                 default:
                     throw new ArgumentException("invalid message type");
@@ -84,23 +82,6 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                 handler(this, new ForwardedSubscriptionEventArgs(message.ClientId, message.Topic, message.IsAdd));
         }
 
-        private void RaiseOnData(MulticastData message)
-        {
-            RaiseOnData(message.Topic, message.Data, false);
-        }
-
-        private void RaiseOnData(UnicastData message)
-        {
-            RaiseOnData(message.Topic, message.Data, true);
-        }
-
         protected abstract void RaiseOnData(string topic, byte[] data, bool isImage);
-
-        private void RaiseOnAuthenticationResponse(ForwardedAuthenticationResponse forwardedAuthenticationResponse)
-        {
-            RaiseOnAuthenticationResponse(forwardedAuthenticationResponse.Status, forwardedAuthenticationResponse.Data);
-        }
-
-        protected abstract void RaiseOnAuthenticationResponse(AuthenticationStatus status, byte[] data);
     }
 }

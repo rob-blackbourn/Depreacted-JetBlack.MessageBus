@@ -65,11 +65,9 @@
     <Compile Include="IO\IByteEncoder.cs" />
     <Compile Include="IO\StreamExtensions.cs" />
     <Compile Include="Collections\TwoWaySet.cs" />
-    <Compile Include="Network\ClientExtensions.cs" />
-    <Compile Include="Network\ConnectExtensions.cs" />
     <Compile Include="Network\FrameClientExtensions.cs" />
     <Compile Include="Network\ListenerExtensions.cs" />
-    <Compile Include="Network\SocketExtensions.cs" />
+    <Compile Include="Network\StreamExtensions.cs" />
     <Compile Include="PortableBitConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

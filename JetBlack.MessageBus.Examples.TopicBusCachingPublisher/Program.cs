@@ -1,20 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Reactive.Linq;
-using JetBlack.MessageBus.Common.IO;
-using JetBlack.MessageBus.Common.Network;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Reactive.Concurrency;
-using System.Net.Sockets;
 
 namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 {
     internal class Program
     {
+        private const int PublishMs = 100;
+
         private static readonly Random Rnd = new Random();
 
         private static void Main(string[] args)
@@ -25,10 +23,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
             const int maxBufferSize = 100000;
 
             var cts = new CancellationTokenSource();
+            var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
 
-            new IPEndPoint(IPAddress.Loopback, 9090).ToConnectObservable()
-                .ObserveOn(TaskPoolScheduler.Default)
-                .Subscribe(socket => CreatePublisher(socket, maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token));
+            CreatePublisher(endpoint, maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
@@ -36,9 +33,9 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
             cts.Cancel();
         }
 
-        private static void CreatePublisher(Socket socket, int maxBufferPoolSize, int maxBufferSize, IScheduler publishScheduler, CancellationToken token)
+        private static void CreatePublisher(IPEndPoint endpoint, int maxBufferPoolSize, int maxBufferSize, IScheduler publishScheduler, CancellationToken token)
         {
-            var client = new TypedClient<JObject>(socket, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token);
+            var client = TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token).Result;
             var cachingPublisher = new CachingPublisher<JObject,string,JToken>(client);
 
             // Prepare some data.
@@ -89,7 +86,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
         private static void ScheduleUpdate(CachingPublisher<JObject,string,JToken> cachingPublisher, string topic, JObject data, IScheduler scheduler, CancellationToken token)
         {
             scheduler.Schedule(
-                TimeSpan.FromMilliseconds(10 * Rnd.Next(5, 100)),
+                TimeSpan.FromMilliseconds(PublishMs * Rnd.Next(5, 100)),
                 () =>
                 {
                     if (!token.IsCancellationRequested)

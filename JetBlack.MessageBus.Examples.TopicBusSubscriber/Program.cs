@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Reactive.Concurrency;
-using System.Reactive.Linq;
 using System.Threading;
-using JetBlack.MessageBus.Common.Network;
-using JetBlack.MessageBus.Json;
-using JetBlack.MessageBus.TopicBus.Adapters;
+using System.Threading.Tasks;
 using log4net;
 using Newtonsoft.Json.Linq;
+using JetBlack.MessageBus.Json;
+using JetBlack.MessageBus.TopicBus.Adapters;
 
 namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
 {
@@ -24,18 +24,18 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
 
             var cts = new CancellationTokenSource();
 
-            new IPEndPoint(IPAddress.Loopback, 9090)
-                .ToConnectObservable()
-                .ObserveOn(TaskPoolScheduler.Default)
-                .Subscribe(
-                    tcpClient =>
-                    {
-                        var client = new TypedClient<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
-                        client.OnDataReceived += OnDataReceived;
-                        client.AddSubscription("LSE.VOD");
-                        client.AddSubscription("LSE.TSCO");
-                        client.AddSubscription("LSE.FOOBAR");
-                    });
+            var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
+
+            //var client = Task.Run(async () => await Start(endpoint, maxBufferPoolSize, maxBufferSize, cts.Token), cts.Token).Result;
+            //var client = Start(endpoint, maxBufferPoolSize, maxBufferSize, cts.Token).Result;
+            Log.Debug("Creating a client");
+            var client = TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token).Result;
+            Log.Debug("Got a client");
+
+            client.OnDataReceived += OnDataReceived;
+            client.AddSubscription("LSE.VOD");
+            client.AddSubscription("LSE.TSCO");
+            client.AddSubscription("LSE.FOOBAR");
 
             // Wait to exit.
             Console.WriteLine("Press <enter> to quit");

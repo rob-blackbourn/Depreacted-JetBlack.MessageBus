@@ -11,22 +11,22 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         public readonly int Id;
 
-        private readonly Socket _socket;
+        // TODO: Should this be a property?
+        private readonly TcpClient _tcpClient;
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
-        private int _status;
 
-        public Interactor(Socket socket, int id, BufferManager bufferManager, CancellationToken token)
+        public Interactor(TcpClient tcpClient, int id, BufferManager bufferManager, CancellationToken token)
         {
-            _socket = socket;
+            _tcpClient = tcpClient;
             Id = id;
             _bufferManager = bufferManager;
-            _messageObserver = socket.ToMessageObserver(_bufferManager, token);
+            _messageObserver = tcpClient.ToMessageObserver(_bufferManager, token);
         }
 
         public IObservable<Message> ToObservable()
         {
-            return _socket.ToMessageObservable(_bufferManager);
+            return _tcpClient.ToMessageObservable(_bufferManager);
         }
 
         public void SendMessage(Message message)
@@ -36,17 +36,18 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public IPEndPoint LocalEndPoint
         {
-            get { return (IPEndPoint) _socket.LocalEndPoint; }
+            get { return (IPEndPoint) _tcpClient.Client.LocalEndPoint; }
         }
 
         public IPEndPoint RemoteEndPoint
         {
-            get { return (IPEndPoint) _socket.RemoteEndPoint; }
+            get { return (IPEndPoint) _tcpClient.Client.RemoteEndPoint; }
         }
 
+        // TODO: Why is this here?
         public Socket Socket
         {
-            get { return _socket; }
+            get { return _tcpClient.Client; }
         }
 
         public byte[] Identity { get; set; }
@@ -88,7 +89,8 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public void Dispose()
         {
-            _socket.Close();
+            // TODO: Should this be the stream?
+            _tcpClient.Close();
         }
     }
 }

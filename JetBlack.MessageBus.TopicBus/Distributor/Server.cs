@@ -15,7 +15,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public Server(IPEndPoint serverEndPoint, BufferManager bufferManager, CancellationToken token)
         {
             Log.Info("Starting server");
-            _market = new Market(new Acceptor(serverEndPoint, bufferManager).ToObservable(token));
+            _market = new Market(new Acceptor(bufferManager).ToObservable(serverEndPoint, token));
         }
 
         public void Dispose()

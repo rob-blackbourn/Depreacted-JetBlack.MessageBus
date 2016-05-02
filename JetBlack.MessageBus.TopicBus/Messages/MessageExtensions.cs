@@ -7,16 +7,16 @@ using System.Net.Sockets;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
-using BufferManager = System.ServiceModel.Channels.BufferManager;
+using System.ServiceModel.Channels;
 
 namespace JetBlack.MessageBus.TopicBus.Messages
 {
     public static class MessageExtensions
     {
-        public static IObservable<Message> ToMessageObservable(this Socket socket, BufferManager bufferManager)
+        public static IObservable<Message> ToMessageObservable(this TcpClient tcpClient, BufferManager bufferManager)
         {
             return Observable.Create<Message>(
-                observer => socket.ToFrameClientObservable(SocketFlags.None, bufferManager).Subscribe(
+                observer => tcpClient.ToFrameClientObservable(bufferManager).Subscribe(
                     disposableBuffer =>
                     {
                         using (var messageStream = new MemoryStream(disposableBuffer.Value.Array, disposableBuffer.Value.Offset, disposableBuffer.Value.Count, false, false))
@@ -30,16 +30,16 @@ namespace JetBlack.MessageBus.TopicBus.Messages
                     observer.OnCompleted));
         }
 
-        public static IObserver<Message> ToMessageObserver(this Socket socket, BufferManager bufferManager, CancellationToken token)
+        public static IObserver<Message> ToMessageObserver(this TcpClient tcpClient, BufferManager bufferManager, CancellationToken token)
         {
-            var socketObserver = socket.ToFrameClientObserver(SocketFlags.None, token);
+            var observer = tcpClient.ToFrameClientObserver(token);
 
             return Observer.Create<Message>(message =>
             {
                 var messageStream = new BufferedMemoryStream(bufferManager, 256);
                 message.Write(messageStream);
                 var buffer = new ArraySegment<byte>(messageStream.GetBuffer(), 0, (int)messageStream.Length);
-                socketObserver.OnNext(DisposableValue.Create(buffer, messageStream));
+                observer.OnNext(DisposableValue.Create(buffer, messageStream));
             });
         }
     }
