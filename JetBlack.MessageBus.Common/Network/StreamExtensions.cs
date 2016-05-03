@@ -28,7 +28,7 @@ namespace JetBlack.MessageBus.Common.Network
                         var buffer = await stream.ReadHeader(token)
                             .ContinueWith(task => stream.ReadBody(task.Result, bufferManager, token), token);
 
-                        if (buffer.Result == default(DisposableValue<ArraySegment<byte>>))
+                        if (buffer.Result == DisposableValue<ArraySegment<byte>>.Empty)
                             break;
 
                         observer.OnNext(buffer.Result);
@@ -56,11 +56,11 @@ namespace JetBlack.MessageBus.Common.Network
         private static async Task<DisposableValue<ArraySegment<byte>>> ReadBody(this Stream stream, int length, BufferManager bufferManager, CancellationToken token)
         {
             if (length <= 0)
-                return default(DisposableValue<ArraySegment<byte>>);
+                return DisposableValue<ArraySegment<byte>>.Empty;
 
             var buffer = bufferManager.TakeBuffer(length);
             if (await stream.ReadBytesCompletelyAsync(buffer, length, token) != length)
-                return default(DisposableValue<ArraySegment<byte>>);
+                return DisposableValue<ArraySegment<byte>>.Empty;
 
             return DisposableValue.Create(new ArraySegment<byte>(buffer, 0, length), Disposable.Create(() => bufferManager.ReturnBuffer(buffer)));
         }
