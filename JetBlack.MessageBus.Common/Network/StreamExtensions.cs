@@ -85,6 +85,8 @@ namespace JetBlack.MessageBus.Common.Network
             var read = 0;
             while (read < length)
             {
+                token.ThrowIfCancellationRequested();
+
                 var remaining = length - read;
                 var bytes = await stream.ReadAsync(buf, read, remaining, token);
                 if (bytes == 0)
