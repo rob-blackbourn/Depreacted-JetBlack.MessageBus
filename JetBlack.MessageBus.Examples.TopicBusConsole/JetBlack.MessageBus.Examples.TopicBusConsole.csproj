@@ -71,9 +71,9 @@
       <Project>{8a5a252a-d66c-498f-8dfd-fd65c4f74d69}</Project>
       <Name>JetBlack.MessageBus.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\JetBlack.MessageBus.TopicBus\JetBlack.MessageBus.TopicBus.csproj">
-      <Project>{0b635550-7457-4c7e-b8ae-1c2bc24891c0}</Project>
-      <Name>JetBlack.MessageBus.TopicBus</Name>
+    <ProjectReference Include="..\JetBlack.MessageBus.TopicBus.Distributor\JetBlack.MessageBus.TopicBus.Distributor.csproj">
+      <Project>{629472e7-b375-409a-b5a2-ab742ab994e7}</Project>
+      <Name>JetBlack.MessageBus.TopicBus.Distributor</Name>
     </ProjectReference>
     <ProjectReference Include="..\JetBrains.Annotations\JetBrains.Annotations.csproj">
       <Project>{23f371ec-997b-4b32-8cd2-42111ded04b7}</Project>

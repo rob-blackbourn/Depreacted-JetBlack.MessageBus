@@ -83,10 +83,6 @@
       <Project>{d7346d08-95b2-4324-8004-ede1c05f1ddb}</Project>
       <Name>JetBlack.MessageBus.TopicBus.Adapters</Name>
     </ProjectReference>
-    <ProjectReference Include="..\JetBlack.MessageBus.TopicBus\JetBlack.MessageBus.TopicBus.csproj">
-      <Project>{0b635550-7457-4c7e-b8ae-1c2bc24891c0}</Project>
-      <Name>JetBlack.MessageBus.TopicBus</Name>
-    </ProjectReference>
     <ProjectReference Include="..\JetBrains.Annotations\JetBrains.Annotations.csproj">
       <Project>{23f371ec-997b-4b32-8cd2-42111ded04b7}</Project>
       <Name>JetBrains.Annotations</Name>
