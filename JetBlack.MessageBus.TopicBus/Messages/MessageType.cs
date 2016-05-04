@@ -6,10 +6,6 @@
         UnicastData,
         ForwardedSubscriptionRequest,
         NotificationRequest,
-        SubscriptionRequest,
-        AuthenticationRequest,
-        ForwardedAuthenticationRequest,
-        AuthenticationResponse,
-        ForwardedAuthenticationResponse
+        SubscriptionRequest
     }
 }

@@ -31,11 +31,6 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             Publish(topic, isImage, _byteEncoder.Encode(data));
         }
 
-        public void RequestAuthentication(TData data)
-        {
-            RequestAuthentication(_byteEncoder.Encode(data));
-        }
-
         protected override void RaiseOnData(string topic, byte[] data, bool isImage)
         {
             var handler = OnDataReceived;

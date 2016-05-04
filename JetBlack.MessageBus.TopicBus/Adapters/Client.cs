@@ -70,11 +70,6 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             _messageObserver.OnNext(new NotificationRequest(topicPattern, false));
         }
 
-        public void RequestAuthentication(byte[] data)
-        {
-            _messageObserver.OnNext(new AuthenticationRequest(data));
-        }
-
         private void RaiseOnForwardedSubscriptionRequest(ForwardedSubscriptionRequest message)
         {
             var handler = OnForwardedSubscription;

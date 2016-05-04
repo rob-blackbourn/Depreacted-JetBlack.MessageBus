@@ -57,7 +57,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Adapters\AuthenticationResponseEventArgs.cs" />
     <Compile Include="Adapters\CachingPublisher.cs" />
     <Compile Include="Adapters\Client.cs" />
     <Compile Include="Adapters\DataReceivedEventArgs.cs" />
@@ -76,11 +75,6 @@
     <Compile Include="Distributor\SourceSinkMessage.cs" />
     <Compile Include="Distributor\SubscriptionManager.cs" />
     <Compile Include="Distributor\SubscriptionMarshaller.cs" />
-    <Compile Include="Messages\AuthenticationResponse.cs" />
-    <Compile Include="Messages\AuthenticationStatus.cs" />
-    <Compile Include="Messages\AuthenticationRequest.cs" />
-    <Compile Include="Messages\ForwardedAuthenticationRequest.cs" />
-    <Compile Include="Messages\ForwardedAuthenticationResponse.cs" />
     <Compile Include="Messages\MessageExtensions.cs" />
     <Compile Include="Messages\ForwardedSubscriptionRequest.cs" />
     <Compile Include="Messages\Message.cs" />
