@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Reactive.Concurrency;
+using System.Threading;
+using Newtonsoft.Json.Linq;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
-using Newtonsoft.Json.Linq;
-using System.Threading;
-using System.Reactive.Concurrency;
 
 namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 {

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<TData, TKey, TValue> where TData:IDictionary<TKey,TValue>
+    public class CachingPublisher<TData, TKey, TValue> where TData : IDictionary<TKey, TValue>
     {
         private readonly TypedClient<TData> _client;
         private readonly Cache _cache;
@@ -102,7 +102,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     Add(topic, cacheItem = new CacheItem { Data = data });
 
                 // Bring the cache data up to date.
-                if (Equals(data, default(IDictionary<string,TValue>)) || Equals(cacheItem.Data, default(TData)))
+                if (Equals(data, default(IDictionary<string, TValue>)) || Equals(cacheItem.Data, default(TData)))
                     cacheItem.Data = data; // overwrite
                 else // update
                     foreach (var item in data)

@@ -79,6 +79,10 @@
       <Project>{dc39775c-0471-4084-8d4a-0e4e32c30067}</Project>
       <Name>JetBlack.MessageBus.Json</Name>
     </ProjectReference>
+    <ProjectReference Include="..\JetBlack.MessageBus.TopicBus.Adapters\JetBlack.MessageBus.TopicBus.Adapters.csproj">
+      <Project>{d7346d08-95b2-4324-8004-ede1c05f1ddb}</Project>
+      <Name>JetBlack.MessageBus.TopicBus.Adapters</Name>
+    </ProjectReference>
     <ProjectReference Include="..\JetBlack.MessageBus.TopicBus\JetBlack.MessageBus.TopicBus.csproj">
       <Project>{0b635550-7457-4c7e-b8ae-1c2bc24891c0}</Project>
       <Name>JetBlack.MessageBus.TopicBus</Name>

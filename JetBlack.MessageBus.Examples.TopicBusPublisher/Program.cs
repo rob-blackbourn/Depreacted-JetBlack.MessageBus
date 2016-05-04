@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
-using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
-using System.Net.Sockets;
 
 namespace JetBlack.MessageBus.Examples.TopicBusPublisher
 {

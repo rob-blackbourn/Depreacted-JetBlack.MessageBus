@@ -3,7 +3,6 @@ using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Threading;
 using JetBlack.MessageBus.Common.IO;
-using JetBlack.MessageBus.TopicBus.Messages;
 using System.Net;
 using System.Threading.Tasks;
 
