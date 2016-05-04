@@ -71,12 +71,9 @@ namespace JetBlack.MessageBus.Common.Network
             {
                 var headerBuffer = BitConverter.GetBytes(disposableBuffer.Value.Count);
 
-                await Task.WhenAll(new Task[]
-                    {
-                        stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token),
-                        stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token),
-                        stream.FlushAsync(token)
-                    });
+                await stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token)
+                    .ContinueWith(_ => stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token), token)
+                    .ContinueWith(_ => stream.FlushAsync(token), token);
             });
         }
 
