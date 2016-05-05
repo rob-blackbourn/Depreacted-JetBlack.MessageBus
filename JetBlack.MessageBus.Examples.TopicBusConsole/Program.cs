@@ -17,17 +17,15 @@ namespace JetBlack.MessageBus.Examples.TopicBusConsole
             var ipAddress = IPAddress.Any;
             const int port = 9090;
 
-            var cts = new CancellationTokenSource();
             var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
             var endpoint = new IPEndPoint(ipAddress, port);
 
-            var server = new Server(endpoint, bufferManager, cts.Token);
+            var server = new Server(endpoint, bufferManager);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
 
             server.Dispose();
-            cts.Cancel();
         }
     }
 }

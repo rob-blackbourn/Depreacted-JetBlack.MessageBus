@@ -16,12 +16,12 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
 
-        public Interactor(TcpClient tcpClient, int id, BufferManager bufferManager, CancellationToken token)
+        public Interactor(TcpClient tcpClient, int id, BufferManager bufferManager)
         {
             _tcpClient = tcpClient;
             Id = id;
             _bufferManager = bufferManager;
-            _messageObserver = tcpClient.ToMessageObserver(_bufferManager, token);
+            _messageObserver = tcpClient.ToMessageObserver(_bufferManager);
         }
 
         public IObservable<Message> ToObservable()

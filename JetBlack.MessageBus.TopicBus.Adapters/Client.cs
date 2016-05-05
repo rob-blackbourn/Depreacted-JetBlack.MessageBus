@@ -19,7 +19,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             // TODO: Howdo we close the client if we don't store the client?
             var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
             tcpClient.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
-            _messageObserver = tcpClient.ToMessageObserver(bufferManager, token);
+            _messageObserver = tcpClient.ToMessageObserver(bufferManager);
         }
 
         private void Dispatch(Message message)

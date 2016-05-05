@@ -18,12 +18,12 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _bufferManager = bufferManager;
         }
 
-        public IObservable<Interactor> ToObservable(IPEndPoint endpoint, CancellationToken token)
+        public IObservable<Interactor> ToObservable(IPEndPoint endpoint)
         {
             return Observable.Create<Interactor>(observer =>
                 endpoint.ToListenerAsyncObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
-                    .Subscribe(tcpClient => observer.OnNext(new Interactor(tcpClient, _nextId++, _bufferManager, token))));
+                    .Subscribe(tcpClient => observer.OnNext(new Interactor(tcpClient, _nextId++, _bufferManager))));
         }
     }
 }

@@ -12,10 +12,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private readonly Market _market;
 
-        public Server(IPEndPoint serverEndPoint, BufferManager bufferManager, CancellationToken token)
+        public Server(IPEndPoint serverEndPoint, BufferManager bufferManager)
         {
             Log.Info("Starting server");
-            _market = new Market(new Acceptor(bufferManager).ToObservable(serverEndPoint, token));
+            _market = new Market(new Acceptor(bufferManager).ToObservable(serverEndPoint));
         }
 
         public void Dispose()

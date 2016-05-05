@@ -30,9 +30,9 @@ namespace JetBlack.MessageBus.TopicBus.Messages
                     observer.OnCompleted));
         }
 
-        public static IObserver<Message> ToMessageObserver(this TcpClient tcpClient, BufferManager bufferManager, CancellationToken token)
+        public static IObserver<Message> ToMessageObserver(this TcpClient tcpClient, BufferManager bufferManager)
         {
-            var observer = tcpClient.ToFrameClientAsyncObserver(token);
+            var observer = tcpClient.ToFrameClientObserver();
 
             return Observer.Create<Message>(message =>
             {

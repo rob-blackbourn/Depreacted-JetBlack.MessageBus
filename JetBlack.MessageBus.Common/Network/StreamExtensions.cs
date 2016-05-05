@@ -12,10 +12,10 @@ namespace JetBlack.MessageBus.Common.Network
 {
     public static class StreamExtensions
     {
-        public static ISubject<DisposableValue<ArraySegment<byte>>, DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncSubject(this Stream stream, BufferManager bufferManager, CancellationToken token)
-        {
-            return Subject.Create(stream.ToFrameStreamAsyncObserver(token), stream.ToFrameStreamAsyncObservable(bufferManager));
-        }
+        //public static ISubject<DisposableValue<ArraySegment<byte>>, DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncSubject(this Stream stream, BufferManager bufferManager, CancellationToken token)
+        //{
+        //    return Subject.Create(stream.ToFrameStreamAsyncObserver(token), stream.ToFrameStreamAsyncObservable(bufferManager));
+        //}
 
         public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncObservable(this Stream stream, BufferManager bufferManager)
         {
@@ -26,7 +26,11 @@ namespace JetBlack.MessageBus.Common.Network
                     while (!token.IsCancellationRequested)
                     {
                         var buffer = await stream.ReadHeader(token)
-                            .ContinueWith(task => stream.ReadBody(task.Result, bufferManager, token), token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
+                            .ContinueWith(
+                                task => stream.ReadBody(task.Result, bufferManager, token),
+                                token,
+                                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.AttachedToParent,
+                                TaskScheduler.Current);
 
                         if (buffer.Result == DisposableValue<ArraySegment<byte>>.Empty)
                             break;
@@ -65,15 +69,35 @@ namespace JetBlack.MessageBus.Common.Network
             return DisposableValue.Create(new ArraySegment<byte>(buffer, 0, length), Disposable.Create(() => bufferManager.ReturnBuffer(buffer)));
         }
 
-        public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncObserver(this Stream stream, CancellationToken token)
+        //public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncObserver(this Stream stream, CancellationToken token)
+        //{
+        //    return Observer.Create<DisposableValue<ArraySegment<byte>>>(async disposableBuffer =>
+        //    {
+        //        var headerBuffer = BitConverter.GetBytes(disposableBuffer.Value.Count);
+
+        //        await stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token)
+        //            .ContinueWith(
+        //                _ => stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token),
+        //                token,
+        //                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.AttachedToParent,
+        //                TaskScheduler.Current)
+        //            .ContinueWith(
+        //                _ => stream.FlushAsync(token),
+        //                token,
+        //                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.AttachedToParent,
+        //                TaskScheduler.Current);
+        //    });
+        //}
+
+        public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameStreamObserver(this Stream stream)
         {
-            return Observer.Create<DisposableValue<ArraySegment<byte>>>(async disposableBuffer =>
+            return Observer.Create<DisposableValue<ArraySegment<byte>>>(disposableBuffer =>
             {
                 var headerBuffer = BitConverter.GetBytes(disposableBuffer.Value.Count);
 
-                await stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token)
-                    .ContinueWith(_ => stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token), token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current)
-                    .ContinueWith(_ => stream.FlushAsync(token), token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
+                stream.Write(headerBuffer, 0, headerBuffer.Length);
+                stream.Write(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count);
+                stream.Flush();
             });
         }
 
