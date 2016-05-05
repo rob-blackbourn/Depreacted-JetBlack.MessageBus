@@ -12,12 +12,12 @@ namespace JetBlack.MessageBus.Common.Network
 {
     public static class StreamExtensions
     {
-        public static ISubject<DisposableValue<ArraySegment<byte>>, DisposableValue<ArraySegment<byte>>> ToFrameStreamSubject(this Stream stream, BufferManager bufferManager, CancellationToken token)
+        public static ISubject<DisposableValue<ArraySegment<byte>>, DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncSubject(this Stream stream, BufferManager bufferManager, CancellationToken token)
         {
-            return Subject.Create(stream.ToFrameStreamObserver(token), stream.ToFrameStreamObservable(bufferManager));
+            return Subject.Create(stream.ToFrameStreamAsyncObserver(token), stream.ToFrameStreamAsyncObservable(bufferManager));
         }
 
-        public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameStreamObservable(this Stream stream, BufferManager bufferManager)
+        public static IObservable<DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncObservable(this Stream stream, BufferManager bufferManager)
         {
             return Observable.Create<DisposableValue<ArraySegment<byte>>>(async (observer, token) =>
             {
@@ -65,7 +65,7 @@ namespace JetBlack.MessageBus.Common.Network
             return DisposableValue.Create(new ArraySegment<byte>(buffer, 0, length), Disposable.Create(() => bufferManager.ReturnBuffer(buffer)));
         }
 
-        public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameStreamObserver(this Stream stream, CancellationToken token)
+        public static IObserver<DisposableValue<ArraySegment<byte>>> ToFrameStreamAsyncObserver(this Stream stream, CancellationToken token)
         {
             return Observer.Create<DisposableValue<ArraySegment<byte>>>(async disposableBuffer =>
             {

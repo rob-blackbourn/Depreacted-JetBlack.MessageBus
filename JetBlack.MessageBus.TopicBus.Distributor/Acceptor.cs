@@ -21,7 +21,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public IObservable<Interactor> ToObservable(IPEndPoint endpoint, CancellationToken token)
         {
             return Observable.Create<Interactor>(observer =>
-                endpoint.ToListenerObservable(10)
+                endpoint.ToListenerAsyncObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
                     .Subscribe(tcpClient => observer.OnNext(new Interactor(tcpClient, _nextId++, _bufferManager, token))));
         }

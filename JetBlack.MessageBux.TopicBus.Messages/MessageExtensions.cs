@@ -16,7 +16,7 @@ namespace JetBlack.MessageBus.TopicBus.Messages
         public static IObservable<Message> ToMessageObservable(this TcpClient tcpClient, BufferManager bufferManager)
         {
             return Observable.Create<Message>(
-                observer => tcpClient.ToFrameClientObservable(bufferManager).Subscribe(
+                observer => tcpClient.ToFrameClientAsyncObservable(bufferManager).Subscribe(
                     disposableBuffer =>
                     {
                         using (var messageStream = new MemoryStream(disposableBuffer.Value.Array, disposableBuffer.Value.Offset, disposableBuffer.Value.Count, false, false))
@@ -32,7 +32,7 @@ namespace JetBlack.MessageBus.TopicBus.Messages
 
         public static IObserver<Message> ToMessageObserver(this TcpClient tcpClient, BufferManager bufferManager, CancellationToken token)
         {
-            var observer = tcpClient.ToFrameClientObserver(token);
+            var observer = tcpClient.ToFrameClientAsyncObserver(token);
 
             return Observer.Create<Message>(message =>
             {
