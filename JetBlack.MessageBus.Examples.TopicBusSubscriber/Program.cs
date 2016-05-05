@@ -6,6 +6,7 @@ using log4net;
 using Newtonsoft.Json.Linq;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
+using System.Threading.Tasks;
 
 namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
 {
@@ -17,6 +18,18 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
         {
             log4net.Config.XmlConfigurator.Configure();
 
+            try
+            {
+                MainAsync(args).Wait();
+            }
+            catch (Exception error)
+            {
+                Log.Error("Failed", error);
+            }
+        }
+
+        static async Task MainAsync(string[] args)
+        {
             const int maxBufferPoolSize = 100;
             const int maxBufferSize = 100000;
 
@@ -24,10 +37,8 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
 
             var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
 
-            //var client = Task.Run(async () => await Start(endpoint, maxBufferPoolSize, maxBufferSize, cts.Token), cts.Token).Result;
-            //var client = Start(endpoint, maxBufferPoolSize, maxBufferSize, cts.Token).Result;
             Log.Debug("Creating a client");
-            var client = TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token).Result;
+            var client = await TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
             Log.Debug("Got a client");
 
             client.OnDataReceived += OnDataReceived;
