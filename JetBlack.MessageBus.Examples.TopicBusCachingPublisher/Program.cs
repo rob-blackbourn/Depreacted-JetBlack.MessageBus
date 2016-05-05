@@ -6,6 +6,7 @@ using System.Threading;
 using Newtonsoft.Json.Linq;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
+using System.Threading.Tasks;
 
 namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 {
@@ -19,13 +20,28 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
         {
             log4net.Config.XmlConfigurator.Configure();
 
+            try
+            {
+                MainAsync(args).Wait();
+            }
+            catch (Exception error)
+            {
+                Console.WriteLine("Failed: " + error.Message);
+            }
+        }
+
+        static async Task MainAsync(string[] args)
+        {
             const int maxBufferPoolSize = 100;
             const int maxBufferSize = 100000;
 
             var cts = new CancellationTokenSource();
             var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
 
-            CreatePublisher(endpoint, maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+            var client = await TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+            var cachingPublisher = new CachingPublisher<JObject, string, JToken>(client);
+
+            StartPublishing(cachingPublisher, TaskPoolScheduler.Default, cts.Token);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
@@ -33,11 +49,8 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
             cts.Cancel();
         }
 
-        private static void CreatePublisher(IPEndPoint endpoint, int maxBufferPoolSize, int maxBufferSize, IScheduler publishScheduler, CancellationToken token)
+        private static void StartPublishing(CachingPublisher<JObject, string, JToken> cachingPublisher, IScheduler publishScheduler, CancellationToken token)
         {
-            var client = TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token).Result;
-            var cachingPublisher = new CachingPublisher<JObject,string,JToken>(client);
-
             // Prepare some data.
             var marketData = new Dictionary<string, JObject>
             {
