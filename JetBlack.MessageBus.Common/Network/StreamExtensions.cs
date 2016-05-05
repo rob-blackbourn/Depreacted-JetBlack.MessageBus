@@ -26,7 +26,7 @@ namespace JetBlack.MessageBus.Common.Network
                     while (!token.IsCancellationRequested)
                     {
                         var buffer = await stream.ReadHeader(token)
-                            .ContinueWith(task => stream.ReadBody(task.Result, bufferManager, token), token);
+                            .ContinueWith(task => stream.ReadBody(task.Result, bufferManager, token), token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
 
                         if (buffer.Result == DisposableValue<ArraySegment<byte>>.Empty)
                             break;
@@ -72,8 +72,8 @@ namespace JetBlack.MessageBus.Common.Network
                 var headerBuffer = BitConverter.GetBytes(disposableBuffer.Value.Count);
 
                 await stream.WriteAsync(headerBuffer, 0, headerBuffer.Length, token)
-                    .ContinueWith(_ => stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token), token)
-                    .ContinueWith(_ => stream.FlushAsync(token), token);
+                    .ContinueWith(_ => stream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, token), token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current)
+                    .ContinueWith(_ => stream.FlushAsync(token), token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
             });
         }
 
