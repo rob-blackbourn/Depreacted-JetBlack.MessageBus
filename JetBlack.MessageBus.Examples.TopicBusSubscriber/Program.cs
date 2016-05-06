@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Net;
 using System.Reactive.Concurrency;
-using System.Threading;
+using System.Threading.Tasks;
+using BufferManager = System.ServiceModel.Channels.BufferManager;
 using log4net;
 using Newtonsoft.Json.Linq;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
-using System.Threading.Tasks;
 
 namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
 {
@@ -32,14 +32,10 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
         {
             const int maxBufferPoolSize = 100;
             const int maxBufferSize = 100000;
-
-            var cts = new CancellationTokenSource();
+            var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
 
             var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
-
-            Log.Debug("Creating a client");
-            var client = await Client<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
-            Log.Debug("Got a client");
+            var client = await Client.Create(endpoint, new JsonEncoder<JObject>(), bufferManager, TaskPoolScheduler.Default);
 
             client.OnDataReceived += OnDataReceived;
             client.AddSubscription("LSE.VOD");
@@ -51,7 +47,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
             Console.ReadLine();
 
             // Tidy up.
-            cts.Cancel();
+            client.Dispose();
         }
 
         private static void OnDataReceived(object sender, DataReceivedEventArgs<JObject> e)

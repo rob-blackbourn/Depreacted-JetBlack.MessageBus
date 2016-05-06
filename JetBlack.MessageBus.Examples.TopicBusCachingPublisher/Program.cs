@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Net;
 using System.Reactive.Concurrency;
 using System.Threading;
+using System.Threading.Tasks;
+using BufferManager = System.ServiceModel.Channels.BufferManager;
 using Newtonsoft.Json.Linq;
 using JetBlack.MessageBus.Json;
 using JetBlack.MessageBus.TopicBus.Adapters;
-using System.Threading.Tasks;
 
 namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 {
@@ -34,19 +35,21 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
         {
             const int maxBufferPoolSize = 100;
             const int maxBufferSize = 100000;
+            var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
 
-            var cts = new CancellationTokenSource();
             var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
 
-            var client = await Client<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+            var client = await Client.Create(endpoint, new JsonEncoder<JObject>(), bufferManager, TaskPoolScheduler.Default);
             var cachingPublisher = new CachingPublisher<JObject, string, JToken>(client);
 
+            var cts = new CancellationTokenSource();
             StartPublishing(cachingPublisher, TaskPoolScheduler.Default, cts.Token);
 
             Console.WriteLine("Press <ENTER> to quit");
             Console.ReadLine();
 
             cts.Cancel();
+            client.Dispose();
         }
 
         private static void StartPublishing(CachingPublisher<JObject, string, JToken> cachingPublisher, IScheduler publishScheduler, CancellationToken token)

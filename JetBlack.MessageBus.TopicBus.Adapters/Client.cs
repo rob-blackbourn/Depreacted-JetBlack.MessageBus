@@ -11,17 +11,32 @@ using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public abstract class Client
+    public class Client
     {
+        public static async Task<Client<T>> Create<T>(IPEndPoint endpoint, IByteEncoder<T> byteEncoder, BufferManager bufferManager, IScheduler scheduler)
+        {
+            var tcpClient = new TcpClient();
+            await tcpClient.ConnectAsync(endpoint.Address, endpoint.Port);
+
+            return new Client<T>(tcpClient, byteEncoder, bufferManager, scheduler);
+        }
+    }
+
+    public class Client<T> : Client, IDisposable
+    {
+        public event EventHandler<DataReceivedEventArgs<T>> OnDataReceived;
         public event EventHandler<ForwardedSubscriptionEventArgs> OnForwardedSubscription;
 
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly TcpClient _tcpClient;
+        private readonly IByteEncoder<T> _byteEncoder;
         private readonly IObserver<Message> _messageObserver;
 
-        protected Client(TcpClient tcpClient, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        public Client(TcpClient tcpClient, IByteEncoder<T> byteEncoder, BufferManager bufferManager, IScheduler scheduler)
         {
-            // TODO: Howdo we close the client if we don't store the client?
-            var bufferManager = BufferManager.CreateBufferManager(maxBufferPoolSize, maxBufferSize);
-            tcpClient.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, token);
+            _tcpClient = tcpClient;
+            _byteEncoder = byteEncoder;
+            tcpClient.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, _cancellationTokenSource.Token);
             _messageObserver = tcpClient.ToMessageObserver(bufferManager);
         }
 
@@ -53,14 +68,15 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             _messageObserver.OnNext(new SubscriptionRequest(topic, false));
         }
 
-        protected void Send(int clientId, string topic, bool isImage, byte[] data)
+
+        public void Send(int clientId, string topic, bool isImage, T data)
         {
-            _messageObserver.OnNext(new UnicastData(clientId, topic, isImage, data));
+            _messageObserver.OnNext(new UnicastData(clientId, topic, isImage, _byteEncoder.Encode(data)));
         }
 
-        protected void Publish(string topic, bool isImage, byte[] data)
+        public void Publish(string topic, bool isImage, T data)
         {
-            _messageObserver.OnNext(new MulticastData(topic, isImage, data));
+            _messageObserver.OnNext(new MulticastData(topic, isImage, _byteEncoder.Encode(data)));
         }
 
         public void AddNotification(string topicPattern)
@@ -80,44 +96,17 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                 handler(this, new ForwardedSubscriptionEventArgs(message.ClientId, message.Topic, message.IsAdd));
         }
 
-        protected abstract void RaiseOnData(string topic, byte[] data, bool isImage);
-    }
-
-    public class Client<TData> : Client
-    {
-        public event EventHandler<DataReceivedEventArgs<TData>> OnDataReceived;
-
-        private readonly IByteEncoder<TData> _byteEncoder;
-
-        public Client(TcpClient tcpClient, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
-            : base(tcpClient, maxBufferPoolSize, maxBufferSize, scheduler, token)
-        {
-            _byteEncoder = byteEncoder;
-        }
-
-        public void Send(int clientId, string topic, bool isImage, TData data)
-        {
-            Send(clientId, topic, isImage, _byteEncoder.Encode(data));
-        }
-
-        public void Publish(string topic, bool isImage, TData data)
-        {
-            Publish(topic, isImage, _byteEncoder.Encode(data));
-        }
-
-        protected override void RaiseOnData(string topic, byte[] data, bool isImage)
+        private void RaiseOnData(string topic, byte[] data, bool isImage)
         {
             var handler = OnDataReceived;
             if (handler != null)
-                handler(this, new DataReceivedEventArgs<TData>(topic, _byteEncoder.Decode(data), isImage));
+                handler(this, new DataReceivedEventArgs<T>(topic, _byteEncoder.Decode(data), isImage));
         }
 
-        public static async Task<Client<TData>> Create(IPEndPoint endpoint, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        public void Dispose()
         {
-            var tcpClient = new TcpClient();
-            await tcpClient.ConnectAsync(endpoint.Address, endpoint.Port);
-
-            return new Client<TData>(tcpClient, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token);
+            _cancellationTokenSource.Cancel();
+            _tcpClient.Close();
         }
     }
 }
