@@ -89,11 +89,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
 
             // Publish the data.
             foreach (var item in marketData)
-            {
                 cachingPublisher.Publish(item.Key, item.Value);
-                // Remove the name so we don't republish it.
-                item.Value.Remove("NAME");
-            }
 
             foreach (var item in marketData)
                 ScheduleUpdate(cachingPublisher, item.Key, item.Value, publishScheduler, token);
@@ -119,10 +115,15 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
             var bid = (double) data["BID"];
             var ask = (double) data["ASK"];
             var spread = ask - bid;
+            var newData = new JObject
+            {
+                {"BID",  Math.Round(bid + bid * Rnd.NextDouble() * 5.0 / 100.0, 2)},
+                {"ASK",  Math.Round(bid + spread, 2)}
+            };
             data["BID"] = Math.Round(bid + bid * Rnd.NextDouble() * 5.0 / 100.0, 2);
             data["ASK"] = Math.Round(bid + spread, 2);
-            Console.WriteLine("{0}, BID={1}, ASK={2}", topic, data["BID"], data["ASK"]);
-            cachingPublisher.Publish(topic, data);
+            Console.WriteLine("{0}: {1}", topic, newData);
+            cachingPublisher.Publish(topic, newData);
         }
     }
 }

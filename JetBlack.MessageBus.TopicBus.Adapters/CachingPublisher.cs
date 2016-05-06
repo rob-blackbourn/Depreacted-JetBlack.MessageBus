@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using log4net;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
-    public class CachingPublisher<TData, TKey, TValue> where TData : IDictionary<TKey, TValue>
+    public class CachingPublisher<TData, TKey, TValue> where TData : IDictionary<TKey, TValue>, new()
     {
+        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private readonly Client<TData> _client;
         private readonly Cache _cache;
         private readonly object _gate = new object();
@@ -54,6 +57,8 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
             public void AddSubscription(int clientId, string topic)
             {
+                Log.DebugFormat("AddSubscription: clientId={0}, topic=\"{1}\"", clientId, topic);
+
                 // Have we received a subscription or published data on this topic yet?
                 CacheItem cacheItem;
                 if (!TryGetValue(topic, out cacheItem))
@@ -66,7 +71,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                     cacheItem.ClientStates.Add(clientId, false);
                 }
 
-                if (!cacheItem.ClientStates[clientId] && Equals(cacheItem.Data, default(TData)))
+                if (!(cacheItem.ClientStates[clientId] || Equals(cacheItem.Data, default(TData))))
                 {
                     // Send the image and mark this client appropriately.
                     cacheItem.ClientStates[clientId] = true;
@@ -77,6 +82,8 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
             public void RemoveSubscription(int clientId, string topic)
             {
+                Log.DebugFormat("RemoveSubscription: clientId={0}, topic=\"{1}\"", clientId, topic);
+
                 // Have we received a subscription or published data on this topic yet?
                 CacheItem cacheItem;
                 if (!TryGetValue(topic, out cacheItem))
@@ -98,14 +105,11 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                 // If the topic is not in the cache add it.
                 CacheItem cacheItem;
                 if (!TryGetValue(topic, out cacheItem))
-                    Add(topic, cacheItem = new CacheItem { Data = data });
+                    Add(topic, cacheItem = new CacheItem { Data = new TData() });
 
                 // Bring the cache data up to date.
-                if (Equals(data, default(IDictionary<string, TValue>)) || Equals(cacheItem.Data, default(TData)))
-                    cacheItem.Data = data; // overwrite
-                else // update
-                    foreach (var item in data)
-                        cacheItem.Data[item.Key] = item.Value;
+                foreach (var item in data)
+                    cacheItem.Data[item.Key] = item.Value;
 
                 foreach (var clientState in cacheItem.ClientStates.ToList())
                 {

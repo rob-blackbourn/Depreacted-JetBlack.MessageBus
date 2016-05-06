@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.ServiceModel.Channels;
-using System.Threading;
 using JetBlack.MessageBus.TopicBus.Distributor;
 
 namespace JetBlack.MessageBus.Examples.TopicBusConsole
