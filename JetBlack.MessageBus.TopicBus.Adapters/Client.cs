@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -18,7 +20,10 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             var tcpClient = new TcpClient();
             await tcpClient.ConnectAsync(endpoint.Address, endpoint.Port);
 
-            return new Client<T>(tcpClient, byteEncoder, bufferManager, scheduler);
+            var stream = new NegotiateStream(tcpClient.GetStream(), false);
+            await stream.AuthenticateAsClientAsync();
+
+            return new Client<T>(stream, byteEncoder, bufferManager, scheduler);
         }
     }
 
@@ -28,16 +33,16 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         public event EventHandler<ForwardedSubscriptionEventArgs> OnForwardedSubscription;
 
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        private readonly TcpClient _tcpClient;
+        private readonly Stream _stream;
         private readonly IByteEncoder<T> _byteEncoder;
         private readonly IObserver<Message> _messageObserver;
 
-        public Client(TcpClient tcpClient, IByteEncoder<T> byteEncoder, BufferManager bufferManager, IScheduler scheduler)
+        internal Client(Stream stream, IByteEncoder<T> byteEncoder, BufferManager bufferManager, IScheduler scheduler)
         {
-            _tcpClient = tcpClient;
+            _stream = stream;
             _byteEncoder = byteEncoder;
-            tcpClient.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, _cancellationTokenSource.Token);
-            _messageObserver = tcpClient.ToMessageObserver(bufferManager);
+            stream.ToMessageObservable(bufferManager).SubscribeOn(scheduler).Subscribe(Dispatch, _cancellationTokenSource.Token);
+            _messageObserver = stream.ToMessageObserver(bufferManager);
         }
 
         private void Dispatch(Message message)
@@ -106,7 +111,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         public void Dispose()
         {
             _cancellationTokenSource.Cancel();
-            _tcpClient.Close();
+            _stream.Close();
         }
     }
 }

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
-using System.Threading;
-using JetBlack.MessageBus.TopicBus.Messages;
+using System.Threading.Tasks;
 using BufferManager = System.ServiceModel.Channels.BufferManager;
+using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
@@ -11,22 +13,33 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         public readonly int Id;
 
-        // TODO: Should this be a property?
-        private readonly TcpClient _tcpClient;
+        private readonly Stream _stream;
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
 
-        public Interactor(TcpClient tcpClient, int id, BufferManager bufferManager)
+        public static async Task<Interactor> Create(TcpClient tcpClient, int id, BufferManager bufferManager)
         {
-            _tcpClient = tcpClient;
+            var stream = new NegotiateStream(tcpClient.GetStream());
+            await stream.AuthenticateAsServerAsync();
+            return new Interactor(stream, id, stream.RemoteIdentity.Name, (IPEndPoint)tcpClient.Client.LocalEndPoint, (IPEndPoint)tcpClient.Client.RemoteEndPoint, bufferManager);
+        }
+
+        private Interactor(Stream stream, int id, string name, IPEndPoint localEndPoint, IPEndPoint remoteEndpoint, BufferManager bufferManager)
+        {
+            _stream = stream;
             Id = id;
             _bufferManager = bufferManager;
-            _messageObserver = tcpClient.ToMessageObserver(_bufferManager);
+
+            Name = name;
+            LocalEndPoint = localEndPoint;
+            RemoteEndPoint = remoteEndpoint;
+
+            _messageObserver = stream.ToMessageObserver(_bufferManager);
         }
 
         public IObservable<Message> ToObservable()
         {
-            return _tcpClient.ToMessageObservable(_bufferManager);
+            return _stream.ToMessageObservable(_bufferManager);
         }
 
         public void SendMessage(Message message)
@@ -34,23 +47,11 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _messageObserver.OnNext(message);
         }
 
-        public IPEndPoint LocalEndPoint
-        {
-            get { return (IPEndPoint)_tcpClient.Client.LocalEndPoint; }
-        }
+        public string Name { get; private set; }
 
-        public IPEndPoint RemoteEndPoint
-        {
-            get { return (IPEndPoint)_tcpClient.Client.RemoteEndPoint; }
-        }
+        public IPEndPoint LocalEndPoint { get; private set; }
 
-        // TODO: Why is this here?
-        public Socket Socket
-        {
-            get { return _tcpClient.Client; }
-        }
-
-        public byte[] Identity { get; set; }
+        public IPEndPoint RemoteEndPoint { get; private set; }
 
         public override string ToString()
         {
@@ -89,8 +90,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         public void Dispose()
         {
-            // TODO: Should this be the stream?
-            _tcpClient.Close();
+            _stream.Close();
         }
     }
 }
