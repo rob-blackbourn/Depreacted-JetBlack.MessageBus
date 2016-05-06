@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
-using JetBlack.MessageBus.TopicBus.Messages;
+using System.Threading.Tasks;
 using BufferManager = System.ServiceModel.Channels.BufferManager;
+using JetBlack.MessageBus.Common.IO;
+using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
@@ -78,5 +81,43 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
         }
 
         protected abstract void RaiseOnData(string topic, byte[] data, bool isImage);
+    }
+
+    public class Client<TData> : Client
+    {
+        public event EventHandler<DataReceivedEventArgs<TData>> OnDataReceived;
+
+        private readonly IByteEncoder<TData> _byteEncoder;
+
+        public Client(TcpClient tcpClient, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+            : base(tcpClient, maxBufferPoolSize, maxBufferSize, scheduler, token)
+        {
+            _byteEncoder = byteEncoder;
+        }
+
+        public void Send(int clientId, string topic, bool isImage, TData data)
+        {
+            Send(clientId, topic, isImage, _byteEncoder.Encode(data));
+        }
+
+        public void Publish(string topic, bool isImage, TData data)
+        {
+            Publish(topic, isImage, _byteEncoder.Encode(data));
+        }
+
+        protected override void RaiseOnData(string topic, byte[] data, bool isImage)
+        {
+            var handler = OnDataReceived;
+            if (handler != null)
+                handler(this, new DataReceivedEventArgs<TData>(topic, _byteEncoder.Decode(data), isImage));
+        }
+
+        public static async Task<Client<TData>> Create(IPEndPoint endpoint, IByteEncoder<TData> byteEncoder, int maxBufferPoolSize, int maxBufferSize, IScheduler scheduler, CancellationToken token)
+        {
+            var tcpClient = new TcpClient();
+            await tcpClient.ConnectAsync(endpoint.Address, endpoint.Port);
+
+            return new Client<TData>(tcpClient, byteEncoder, maxBufferPoolSize, maxBufferSize, scheduler, token);
+        }
     }
 }

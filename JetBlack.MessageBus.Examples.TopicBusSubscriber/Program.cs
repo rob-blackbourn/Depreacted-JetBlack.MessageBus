@@ -38,7 +38,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusSubscriber
             var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
 
             Log.Debug("Creating a client");
-            var client = await TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+            var client = await Client<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
             Log.Debug("Got a client");
 
             client.OnDataReceived += OnDataReceived;

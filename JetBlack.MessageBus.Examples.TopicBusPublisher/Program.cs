@@ -35,7 +35,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusPublisher
             var tcpClient = new TcpClient();
             await tcpClient.ConnectAsync(endpoint.Address, endpoint.Port);
 
-            var client = new TypedClient<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token);
+            var client = new Client<JObject>(tcpClient, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, token);
             client.Publish(
                 "LSE.VOD",
                 true,

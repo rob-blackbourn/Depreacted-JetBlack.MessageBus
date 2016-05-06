@@ -38,7 +38,7 @@ namespace JetBlack.MessageBus.Examples.TopicBusCachingPublisher
             var cts = new CancellationTokenSource();
             var endpoint = new IPEndPoint(IPAddress.Loopback, 9090);
 
-            var client = await TypedClient<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
+            var client = await Client<JObject>.Create(endpoint, new JsonEncoder<JObject>(), maxBufferPoolSize, maxBufferSize, TaskPoolScheduler.Default, cts.Token);
             var cachingPublisher = new CachingPublisher<JObject, string, JToken>(client);
 
             StartPublishing(cachingPublisher, TaskPoolScheduler.Default, cts.Token);

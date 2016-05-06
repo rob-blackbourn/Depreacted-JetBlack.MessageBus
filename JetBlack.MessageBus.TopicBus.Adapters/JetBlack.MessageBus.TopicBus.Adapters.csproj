@@ -62,7 +62,6 @@
     <Compile Include="DataReceivedEventArgs.cs" />
     <Compile Include="ForwardedSubscriptionEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TypedClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

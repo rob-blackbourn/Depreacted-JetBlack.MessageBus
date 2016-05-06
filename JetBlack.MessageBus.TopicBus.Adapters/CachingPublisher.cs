@@ -6,11 +6,11 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 {
     public class CachingPublisher<TData, TKey, TValue> where TData : IDictionary<TKey, TValue>
     {
-        private readonly TypedClient<TData> _client;
+        private readonly Client<TData> _client;
         private readonly Cache _cache;
         private readonly object _gate = new Object();
 
-        public CachingPublisher(TypedClient<TData> client)
+        public CachingPublisher(Client<TData> client)
         {
             _client = client;
             _cache = new Cache(client);
@@ -46,9 +46,9 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
 
         class Cache : Dictionary<string, CacheItem>
         {
-            private readonly TypedClient<TData> _client;
+            private readonly Client<TData> _client;
 
-            public Cache(TypedClient<TData> client)
+            public Cache(Client<TData> client)
             {
                 _client = client;
             }
