@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
@@ -8,7 +7,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
     {
         private readonly Client<TData> _client;
         private readonly Cache _cache;
-        private readonly object _gate = new Object();
+        private readonly object _gate = new object();
 
         public CachingPublisher(Client<TData> client)
         {
