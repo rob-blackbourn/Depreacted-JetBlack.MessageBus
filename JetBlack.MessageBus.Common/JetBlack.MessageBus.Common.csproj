@@ -57,6 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\CountedSet.cs" />
     <Compile Include="Collections\EnumerableExtensions.cs" />
     <Compile Include="Diagnostics\FormatExtensions.cs" />
     <Compile Include="Diagnostics\Log4NetExtensions.cs" />

@@ -75,6 +75,7 @@
     <Compile Include="SourceSinkMessage.cs" />
     <Compile Include="SubscriptionManager.cs" />
     <Compile Include="SubscriptionMarshaller.cs" />
+    <Compile Include="SubscriptionRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
