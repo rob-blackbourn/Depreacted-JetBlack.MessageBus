@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBux.TopicBu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBus.TopicBus.Distributor", "JetBlack.MessageBus.TopicBus.Distributor\JetBlack.MessageBus.TopicBus.Distributor.csproj", "{629472E7-B375-409A-B5A2-AB742AB994E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBus.FeedBus.Messages", "JetBlack.MessageBus.FeedBus.Messages\JetBlack.MessageBus.FeedBus.Messages.csproj", "{C5309E1E-52A0-4481-849B-660C1CAD5073}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{629472E7-B375-409A-B5A2-AB742AB994E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{629472E7-B375-409A-B5A2-AB742AB994E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{629472E7-B375-409A-B5A2-AB742AB994E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5309E1E-52A0-4481-849B-660C1CAD5073}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5309E1E-52A0-4481-849B-660C1CAD5073}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5309E1E-52A0-4481-849B-660C1CAD5073}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5309E1E-52A0-4481-849B-660C1CAD5073}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
