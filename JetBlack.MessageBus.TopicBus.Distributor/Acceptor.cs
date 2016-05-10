@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.ServiceModel.Channels;
-using JetBlack.MessageBus.Common.Network;
+using System.Threading.Tasks;
 using log4net;
+using JetBlack.MessageBus.Common.Network;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
@@ -25,18 +27,20 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             return Observable.Create<Interactor>(observer =>
                 endpoint.ToListenerAsyncObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
-                    .Subscribe(async tcpClient =>
-                    {
-                        try
-                        {
-                            var interactor = await Interactor.Create(tcpClient, _nextId++, _bufferManager);
-                            observer.OnNext(interactor);
-                        }
-                        catch (Exception error)
-                        {
-                            Log.Warn("Failed to create interactor", error);
-                        }
-                    }));
+                    .Subscribe(async tcpClient => await Accept(tcpClient, observer)));
+        }
+
+        private async Task Accept(TcpClient tcpClient, IObserver<Interactor> observer)
+        {
+            try
+            {
+                var interactor = await Interactor.Create(tcpClient, _nextId++, _bufferManager);
+                observer.OnNext(interactor);
+            }
+            catch (Exception error)
+            {
+                Log.Warn("Failed to create interactor", error);
+            }
         }
     }
 }
