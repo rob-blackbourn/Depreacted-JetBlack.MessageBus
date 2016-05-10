@@ -4,8 +4,8 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
-using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
+using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {

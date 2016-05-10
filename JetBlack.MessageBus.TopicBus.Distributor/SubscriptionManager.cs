@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text.RegularExpressions;
-using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
+using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
