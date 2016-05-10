@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using JetBlack.MessageBus.TopicBus.Messages;
 using log4net;
-using Message = JetBlack.MessageBus.TopicBus.Messages.Message;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
