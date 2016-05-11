@@ -20,7 +20,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 subscribersForTopic.Add(subscriber);
         }
 
-        public void RemoveSubscription(Interactor subscriber, string topic)
+        public void RemoveSubscription(Interactor subscriber, string topic, bool removeAll)
         {
             // Can we find this topic in the cache?
             CountedSet<Interactor> subscribersForTopic;
@@ -31,16 +31,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             if (!subscribersForTopic.Contains(subscriber))
                 return;
 
-            subscribersForTopic.Remove(subscriber);
+            if (removeAll)
+                subscribersForTopic.RemoveAll(subscriber);
+            else
+                subscribersForTopic.Remove(subscriber);
 
             // If there are no subscribers left on this topic, remove it from the cache.
             if (subscribersForTopic.Count == 0)
                 _cache.Remove(topic);
         }
 
-        public IEnumerable<KeyValuePair<string, CountedSet<Interactor>>> FindTopicsByInteractor(Interactor interactor)
+        public IEnumerable<string> FindTopicsByInteractor(Interactor interactor)
         {
-            return _cache.Where(x => x.Value.Contains(interactor));
+            return _cache.Where(x => x.Value.Contains(interactor)).Select(x => x.Key);
         }
 
         public bool RemoveTopic(string topic)

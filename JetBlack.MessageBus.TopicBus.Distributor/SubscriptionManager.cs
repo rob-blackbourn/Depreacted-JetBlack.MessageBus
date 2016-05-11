@@ -21,16 +21,16 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _publisherMarshaller = publisherMarshaller;
         }
 
-        private readonly SubscriptionRepository _cache = new SubscriptionRepository();
+        private readonly SubscriptionRepository _repository = new SubscriptionRepository();
 
         public void RequestSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
         {
             Log.DebugFormat("Received subscription from {0} on \"{1}\"", subscriber, subscriptionRequest);
 
             if (subscriptionRequest.IsAdd)
-                _cache.AddSubscription(subscriber, subscriptionRequest.Topic);
+                _repository.AddSubscription(subscriber, subscriptionRequest.Topic);
             else
-                _cache.RemoveSubscription(subscriber, subscriptionRequest.Topic);
+                _repository.RemoveSubscription(subscriber, subscriptionRequest.Topic, false);
 
             _notificationMarshaller.ForwardSubscription(subscriber, subscriptionRequest);
         }
@@ -47,29 +47,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             Log.DebugFormat("Removing subscriptions for {0}", interactor);
 
             // Remove the subscriptions
-            var topicsSubscribedTo = new List<string>();
-            var topicsWithoutSubscribers = new List<string>();
-            foreach (var subscription in _cache.FindTopicsByInteractor(interactor))
-            {
-                topicsSubscribedTo.Add(subscription.Key);
-
-                subscription.Value.Remove(interactor);
-                if (subscription.Value.Count == 0)
-                    topicsWithoutSubscribers.Add(subscription.Key);
-            }
-
-            foreach (var topic in topicsWithoutSubscribers)
-                _cache.RemoveTopic(topic);
+            var topics = _repository.FindTopicsByInteractor(interactor).ToList();
+            foreach (var topic in topics)
+                _repository.RemoveSubscription(interactor, topic, true);
 
             // Inform those interested that this interactor is no longer subscribed to these topics.
-            foreach (var subscriptionRequest in topicsSubscribedTo.Select(topic => new SubscriptionRequest(topic, false)))
+            foreach (var subscriptionRequest in topics.Select(topic => new SubscriptionRequest(topic, false)))
                 _notificationMarshaller.ForwardSubscription(interactor, subscriptionRequest);
         }
 
         public void SendUnicastData(Interactor publisher, UnicastData unicastData)
         {
             // Are there subscribers for this topic?
-            var subscribersForTopic = _cache.GetSubscribersToTopic(unicastData.Topic);
+            var subscribersForTopic = _repository.GetSubscribersToTopic(unicastData.Topic);
             if (subscribersForTopic == null)
                 return;
 
@@ -84,7 +74,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public void SendMulticastData(Interactor publisher, MulticastData multicastData)
         {
             // Are there subscribers for this topic?
-            var subscribersForTopic = _cache.GetSubscribersToTopic(multicastData.Topic);
+            var subscribersForTopic = _repository.GetSubscribersToTopic(multicastData.Topic);
             if (subscribersForTopic == null)
                 return;
 
@@ -94,7 +84,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         public void OnNewNotificationRequest(Interactor requester, Regex topicRegex)
         {
             // Find the subscribers whoes subscriptions match the pattern.
-            foreach (var matchingSubscriptions in _cache.GetSubscribersMatchingTopic(topicRegex))
+            foreach (var matchingSubscriptions in _repository.GetSubscribersMatchingTopic(topicRegex))
             {
                 // Tell the requestor about subscribers that are interested in this topic.
                 foreach (var subscriber in matchingSubscriptions.Value)
@@ -110,7 +100,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 
         private void OnStaleTopic(string staleTopic)
         {
-            var subscribersForTopic = _cache.GetSubscribersToTopic(staleTopic);
+            var subscribersForTopic = _repository.GetSubscribersToTopic(staleTopic);
             if (subscribersForTopic == null)
                 return;
 

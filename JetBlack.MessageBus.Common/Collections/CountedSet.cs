@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 namespace JetBlack.MessageBus.Common.Collections
@@ -32,6 +31,11 @@ namespace JetBlack.MessageBus.Common.Collections
             if (count == 0)
                 _cache.Remove(value);
             return count;
+        }
+
+        public bool RemoveAll(T value)
+        {
+            return _cache.Remove(value);
         }
 
         public bool TryGetCount(T value, out int count)
