@@ -12,6 +12,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+        private readonly SubscriptionRepository _repository = new SubscriptionRepository();
         private readonly NotificationMarshaller _notificationMarshaller;
         private readonly PublisherMarshaller _publisherMarshaller;
 
@@ -20,8 +21,6 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _notificationMarshaller = notificationMarshaller;
             _publisherMarshaller = publisherMarshaller;
         }
-
-        private readonly SubscriptionRepository _repository = new SubscriptionRepository();
 
         public void RequestSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
         {
