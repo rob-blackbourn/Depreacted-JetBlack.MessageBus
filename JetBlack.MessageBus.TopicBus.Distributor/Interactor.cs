@@ -11,8 +11,6 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 {
     internal class Interactor : IDisposable, IEquatable<Interactor>, IComparable<Interactor>
     {
-        public readonly int Id;
-
         private readonly Stream _stream;
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
@@ -47,10 +45,9 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _messageObserver.OnNext(message);
         }
 
+        public int Id { get; private set; }
         public string Name { get; private set; }
-
         public IPEndPoint LocalEndPoint { get; private set; }
-
         public IPEndPoint RemoteEndPoint { get; private set; }
 
         public override string ToString()
