@@ -87,9 +87,9 @@
       <Project>{8a5a252a-d66c-498f-8dfd-fd65c4f74d69}</Project>
       <Name>JetBlack.MessageBus.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\JetBlack.MessageBux.TopicBus.Messages\JetBlack.MessageBux.TopicBus.Messages.csproj">
-      <Project>{fc93798c-f777-4c63-99cc-60a5eb882503}</Project>
-      <Name>JetBlack.MessageBux.TopicBus.Messages</Name>
+    <ProjectReference Include="..\JetBlack.MessageBus.TopicBus.Messages\JetBlack.MessageBus.TopicBus.Messages.csproj">
+      <Project>{45628b9d-eb93-4c25-8300-b42c7581d73c}</Project>
+      <Name>JetBlack.MessageBus.TopicBus.Messages</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
