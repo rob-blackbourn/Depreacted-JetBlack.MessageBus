@@ -29,8 +29,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBus.Example
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBus.TopicBus.Adapters", "JetBlack.MessageBus.TopicBus.Adapters\JetBlack.MessageBus.TopicBus.Adapters.csproj", "{D7346D08-95B2-4324-8004-EDE1C05F1DDB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBux.TopicBus.Messages", "JetBlack.MessageBux.TopicBus.Messages\JetBlack.MessageBux.TopicBus.Messages.csproj", "{FC93798C-F777-4C63-99CC-60A5EB882503}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBus.TopicBus.Distributor", "JetBlack.MessageBus.TopicBus.Distributor\JetBlack.MessageBus.TopicBus.Distributor.csproj", "{629472E7-B375-409A-B5A2-AB742AB994E7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JetBlack.MessageBus.FeedBus.Messages", "JetBlack.MessageBus.FeedBus.Messages\JetBlack.MessageBus.FeedBus.Messages.csproj", "{C5309E1E-52A0-4481-849B-660C1CAD5073}"
@@ -75,10 +73,6 @@ Global
 		{D7346D08-95B2-4324-8004-EDE1C05F1DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7346D08-95B2-4324-8004-EDE1C05F1DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7346D08-95B2-4324-8004-EDE1C05F1DDB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FC93798C-F777-4C63-99CC-60A5EB882503}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC93798C-F777-4C63-99CC-60A5EB882503}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC93798C-F777-4C63-99CC-60A5EB882503}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC93798C-F777-4C63-99CC-60A5EB882503}.Release|Any CPU.Build.0 = Release|Any CPU
 		{629472E7-B375-409A-B5A2-AB742AB994E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{629472E7-B375-409A-B5A2-AB742AB994E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{629472E7-B375-409A-B5A2-AB742AB994E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
