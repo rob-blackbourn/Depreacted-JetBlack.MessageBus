@@ -17,6 +17,18 @@ namespace JetBlack.MessageBus.Common
             return (long)Math.Floor(diff.TotalMilliseconds);
         }
 
+        public static DateTime ToDateTime(byte[] buf, int offset)
+        {
+            var timestamp = ToInt64(buf, offset);
+            return Int64ToDate(timestamp);
+        }
+
+        public static byte[] GetBytes(DateTime value)
+        {
+            var timestamp = DateToInt64(value);
+            return GetBytes(timestamp);
+        }
+
         public static short ToInt16(byte[] buf, int offset)
         {
             return (short)((buf[offset] << 8) + (buf[offset + 1] << 0));
@@ -49,8 +61,9 @@ namespace JetBlack.MessageBus.Common
             return BitConverter.ToSingle(byteArray, offset);
         }
 
-        public static double ToDouble(long value)
+        public static double ToDouble(byte[] buf, int offset)
         {
+            var value = ToInt64(buf, offset);
             return BitConverter.Int64BitsToDouble(value);
         }
 
@@ -104,6 +117,13 @@ namespace JetBlack.MessageBus.Common
         }
 
         public static byte[] GetBytes(float value)
+        {
+            var byteArray = BitConverter.GetBytes(value);
+            Array.Reverse(byteArray);
+            return byteArray;
+        }
+
+        public static byte[] GetBytes(double value)
         {
             var byteArray = BitConverter.GetBytes(value);
             Array.Reverse(byteArray);
