@@ -27,6 +27,7 @@ namespace JetBlack.MessageBus.Common.Collections
             Assert.AreEqual(0, countedSet.Count); // a:0, b:0, c:0
         }
 
+        [TestMethod]
         public void ShouldClear()
         {
             var countedSet = new CountedSet<string>();
@@ -38,6 +39,42 @@ namespace JetBlack.MessageBus.Common.Collections
             Assert.AreEqual(3, countedSet.Count);
             countedSet.Clear();
             Assert.AreEqual(0, countedSet.Count);
+        }
+
+        [TestMethod]
+        public void ShouldContain()
+        {
+            var countedSet = new CountedSet<string>();
+
+            const string a = "a", b = "b", c = "c";
+            countedSet.Increment(a);
+            countedSet.Increment(b);
+            Assert.IsTrue(countedSet.Contains(a));
+            Assert.IsTrue(countedSet.Contains(b));
+            Assert.IsFalse(countedSet.Contains(c));
+        }
+
+        [TestMethod]
+        public void ShouldTryGetCount()
+        {
+            var countedSet = new CountedSet<string>();
+
+            int count;
+            const string a = "a";
+            countedSet.Increment(a);
+            Assert.IsTrue(countedSet.TryGetCount(a, out count));
+            Assert.AreEqual(1, count);
+            countedSet.Increment(a);
+            Assert.IsTrue(countedSet.TryGetCount(a, out count));
+            Assert.AreEqual(2, count);
+            countedSet.Increment(a);
+            Assert.IsTrue(countedSet.TryGetCount(a, out count));
+            Assert.AreEqual(3, count);
+            countedSet.Decrement(a);
+            Assert.IsTrue(countedSet.TryGetCount(a, out count));
+            Assert.AreEqual(2, count);
+            countedSet.Delete(a);
+            Assert.IsFalse(countedSet.TryGetCount(a, out count));
         }
     }
 }
