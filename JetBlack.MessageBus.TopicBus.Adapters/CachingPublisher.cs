@@ -1,6 +1,6 @@
-﻿using log4net;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using log4net;
 
 namespace JetBlack.MessageBus.TopicBus.Adapters
 {
@@ -114,7 +114,7 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
                 foreach (var clientState in cacheItem.ClientStates.ToList())
                 {
                     if (clientState.Value)
-                        _client.Send(clientState.Key, topic, false, data);
+                        _client.Publish(topic, false, data);
                     else
                     {
                         // Deliver idividual messages to any clients yet to receive an image.

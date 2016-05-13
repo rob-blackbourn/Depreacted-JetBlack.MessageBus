@@ -73,7 +73,6 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             _messageObserver.OnNext(new SubscriptionRequest(topic, false));
         }
 
-
         public void Send(int clientId, string topic, bool isImage, T data)
         {
             _messageObserver.OnNext(new UnicastData(clientId, topic, isImage, _byteEncoder.Encode(data)));
