@@ -5,14 +5,14 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 {
     internal class PublisherRepository
     {
-        private readonly TwoWaySet<string, Interactor> _topicsAndPublishers = new TwoWaySet<string, Interactor>();
+        private readonly TwoWaySet<string, IInteractor> _topicsAndPublishers = new TwoWaySet<string, IInteractor>();
 
-        public void AddPublisher(Interactor publisher, string topic)
+        public void AddPublisher(IInteractor publisher, string topic)
         {
             _topicsAndPublishers.Add(publisher, topic);
         }
 
-        public IEnumerable<string> RemovePublisher(Interactor publisher)
+        public IEnumerable<string> RemovePublisher(IInteractor publisher)
         {
             return _topicsAndPublishers.Remove(publisher);
         }

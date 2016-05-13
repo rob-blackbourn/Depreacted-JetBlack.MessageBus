@@ -22,15 +22,15 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _bufferManager = bufferManager;
         }
 
-        public IObservable<Interactor> ToObservable(IPEndPoint endpoint)
+        public IObservable<IInteractor> ToObservable(IPEndPoint endpoint)
         {
-            return Observable.Create<Interactor>(observer =>
+            return Observable.Create<IInteractor>(observer =>
                 endpoint.ToListenerAsyncObservable(10)
                     .ObserveOn(TaskPoolScheduler.Default)
                     .Subscribe(async tcpClient => await Accept(tcpClient, observer)));
         }
 
-        private async Task Accept(TcpClient tcpClient, IObserver<Interactor> observer)
+        private async Task Accept(TcpClient tcpClient, IObserver<IInteractor> observer)
         {
             try
             {

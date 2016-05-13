@@ -2,7 +2,7 @@
 {
     static class SourceSinkMessage
     {
-        public static SourceSinkMessage<T> Create<T>(Interactor source, Interactor sink, T content)
+        public static SourceSinkMessage<T> Create<T>(IInteractor source, IInteractor sink, T content)
         {
             return new SourceSinkMessage<T>(source, sink, content);
         }
@@ -10,11 +10,11 @@
 
     class SourceSinkMessage<T>
     {
-        public Interactor Source { get; private set; }
-        public Interactor Sink { get; private set; }
+        public IInteractor Source { get; private set; }
+        public IInteractor Sink { get; private set; }
         public T Content { get; private set; }
 
-        public SourceSinkMessage(Interactor source, Interactor sink, T content)
+        public SourceSinkMessage(IInteractor source, IInteractor sink, T content)
         {
             Source = source;
             Sink = sink;

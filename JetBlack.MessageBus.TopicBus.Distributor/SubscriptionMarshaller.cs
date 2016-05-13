@@ -41,21 +41,21 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 });
         }
 
-        public void SendMulticastData(Interactor sender, MulticastData multicastData)
+        public void SendMulticastData(IInteractor sender, MulticastData multicastData)
         {
             Log.DebugFormat("SendMulticastData(sender={0}, multicastData={1})", sender, multicastData);
 
             _publishedMulticastDataMessages.OnNext(SourceMessage.Create(sender, multicastData));
         }
 
-        public void SendUnicastData(Interactor sender, UnicastData unicastData)
+        public void SendUnicastData(IInteractor sender, UnicastData unicastData)
         {
             Log.DebugFormat("SendUnicastData(sender={0}, unicastData={1})", sender, unicastData);
 
             _publishedUnicastDataMessages.OnNext(SourceMessage.Create(sender, unicastData));
         }
 
-        public void RequestSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
+        public void RequestSubscription(IInteractor subscriber, SubscriptionRequest subscriptionRequest)
         {
             Log.DebugFormat("RequestSubscription(sender={0}, request={1})", subscriber, subscriptionRequest);
 

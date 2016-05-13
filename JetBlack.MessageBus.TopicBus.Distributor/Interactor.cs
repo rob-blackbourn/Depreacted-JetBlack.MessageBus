@@ -9,7 +9,7 @@ using JetBlack.MessageBus.TopicBus.Messages;
 
 namespace JetBlack.MessageBus.TopicBus.Distributor
 {
-    internal class Interactor : IDisposable, IEquatable<Interactor>, IComparable<Interactor>
+    internal class Interactor : IInteractor
     {
         private readonly Stream _stream;
         private readonly BufferManager _bufferManager;
@@ -60,7 +60,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             return Equals(obj as Interactor);
         }
 
-        public bool Equals(Interactor other)
+        public bool Equals(IInteractor other)
         {
             return other != null && other.Id == Id;
         }
@@ -70,7 +70,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             return Id.GetHashCode();
         }
 
-        public int CompareTo(Interactor other)
+        public int CompareTo(IInteractor other)
         {
             return (other == null ? 1 : Id - other.Id);
         }

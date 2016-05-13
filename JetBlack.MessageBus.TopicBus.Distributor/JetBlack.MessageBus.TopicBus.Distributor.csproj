@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Acceptor.cs" />
+    <Compile Include="IInteractor.cs" />
     <Compile Include="Interactor.cs" />
     <Compile Include="InteractorManager.cs" />
     <Compile Include="Market.cs" />

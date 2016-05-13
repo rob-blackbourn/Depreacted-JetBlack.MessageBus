@@ -8,10 +8,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
 {
     internal class NotificationRepository
     {
-        private readonly Dictionary<string, ISet<Interactor>> _topicPatternToNotifiables = new Dictionary<string, ISet<Interactor>>();
+        private readonly Dictionary<string, ISet<IInteractor>> _topicPatternToNotifiables = new Dictionary<string, ISet<IInteractor>>();
         private readonly Dictionary<string, Regex> _topicPatternToRegex = new Dictionary<string, Regex>();
 
-        public void RemoveInteractor(Interactor interactor)
+        public void RemoveInteractor(IInteractor interactor)
         {
             // Remove the interactor where it appears in the notifiables, remembering any topics which are left without any interactors.
             var topicsWithoutInteractors = new HashSet<string>();
@@ -30,14 +30,14 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             }
         }
 
-        public void AddRequest(Interactor notifiable, string topicPattern, IObserver<SourceMessage<Regex>> notificationObserver)
+        public void AddRequest(IInteractor notifiable, string topicPattern, IObserver<SourceMessage<Regex>> notificationObserver)
         {
             // Find or create the set of notifiables for this topic, and cache the regex for the topic pattern.
-            ISet<Interactor> notifiables;
+            ISet<IInteractor> notifiables;
             Regex topicRegex;
             if (!_topicPatternToNotifiables.TryGetValue(topicPattern, out notifiables))
             {
-                _topicPatternToNotifiables.Add(topicPattern, notifiables = new HashSet<Interactor>());
+                _topicPatternToNotifiables.Add(topicPattern, notifiables = new HashSet<IInteractor>());
                 _topicPatternToRegex.Add(topicPattern, topicRegex = new Regex(topicPattern));
             }
             else if (!notifiables.Contains(notifiable))
@@ -50,10 +50,10 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             notificationObserver.OnNext(SourceMessage.Create(notifiable, topicRegex));
         }
 
-        public void RemoveRequest(Interactor notifiable, string topicPattern)
+        public void RemoveRequest(IInteractor notifiable, string topicPattern)
         {
             // Does this topic pattern have any notifiable interactors?
-            ISet<Interactor> notifiables;
+            ISet<IInteractor> notifiables;
             if (!_topicPatternToNotifiables.TryGetValue(topicPattern, out notifiables))
                 return;
 
@@ -73,7 +73,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _topicPatternToRegex.Remove(topicPattern);
         }
 
-        public ISet<Interactor> FindNotifiables(string topic)
+        public ISet<IInteractor> FindNotifiables(string topic)
         {
             return _topicPatternToRegex
                 .Where(x => x.Value.IsMatch(topic))

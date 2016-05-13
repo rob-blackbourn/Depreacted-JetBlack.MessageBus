@@ -18,26 +18,26 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _stalePublishers; }
         }
 
-        public void SendMulticastData(Interactor publisher, MulticastData multicastData, Interactor subscriber)
+        public void SendMulticastData(IInteractor publisher, MulticastData multicastData, IInteractor subscriber)
         {
             _repository.AddPublisher(publisher, multicastData.Topic);
             subscriber.SendMessage(multicastData);
         }
 
-        public void SendUnicastData(Interactor publisher, UnicastData unicastData, Interactor subscriber)
+        public void SendUnicastData(IInteractor publisher, UnicastData unicastData, IInteractor subscriber)
         {
             _repository.AddPublisher(publisher, unicastData.Topic);
             subscriber.SendMessage(unicastData);
         }
 
-        public void OnClosedInteractor(Interactor interactor)
+        public void OnClosedInteractor(IInteractor interactor)
         {
             var topicsWithoutPublishers = _repository.RemovePublisher(interactor);
             if (topicsWithoutPublishers != null)
                 _stalePublishers.OnNext(SourceMessage.Create(interactor, topicsWithoutPublishers));
         }
 
-        public void OnFaultedInteractor(Interactor interactor, Exception error)
+        public void OnFaultedInteractor(IInteractor interactor, Exception error)
         {
             Log.Warn("Interactor faulted: " + interactor, error);
             OnClosedInteractor(interactor);

@@ -18,19 +18,19 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _newNotificationRequests; }
         }
 
-        public void OnFaultedInteractor(Interactor interactor, Exception error)
+        public void OnFaultedInteractor(IInteractor interactor, Exception error)
         {
             Log.Warn("Interactor faulted: " + interactor, error);
             OnClosedInteractor(interactor);
         }
 
-        public void OnClosedInteractor(Interactor interactor)
+        public void OnClosedInteractor(IInteractor interactor)
         {
             Log.DebugFormat("Removing notification requests from {0}", interactor);
             _repository.RemoveInteractor(interactor);
         }
 
-        public void RequestNotification(Interactor notifiable, NotificationRequest notificationRequest)
+        public void RequestNotification(IInteractor notifiable, NotificationRequest notificationRequest)
         {
             Log.DebugFormat("Handling notification request for {0} on {1}", notifiable, notificationRequest);
 

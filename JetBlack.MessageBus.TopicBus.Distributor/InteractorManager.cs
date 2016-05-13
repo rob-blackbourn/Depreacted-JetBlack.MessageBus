@@ -11,8 +11,8 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly IDictionary<int, Interactor> _interactors = new Dictionary<int, Interactor>();
-        private readonly ISubject<Interactor> _closedInteractors = new Subject<Interactor>();
+        private readonly IDictionary<int, IInteractor> _interactors = new Dictionary<int, IInteractor>();
+        private readonly ISubject<IInteractor> _closedInteractors = new Subject<IInteractor>();
         private readonly ISubject<SourceMessage<Exception>> _faultedInteractors = new Subject<SourceMessage<Exception>>();
 
         public InteractorManager()
@@ -23,7 +23,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _faultedInteractors.ObserveOn(scheduler).Subscribe(FaultedInteractor);
         }
 
-        public IObservable<Interactor> ClosedInteractors
+        public IObservable<IInteractor> ClosedInteractors
         {
             get { return _closedInteractors; }
         }
@@ -33,28 +33,28 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _faultedInteractors; }
         }
 
-        public void AddInteractor(Interactor interactor)
+        public void AddInteractor(IInteractor interactor)
         {
             Log.DebugFormat("Adding interactor: {0}", interactor);
 
             _interactors.Add(interactor.Id, interactor);
         }
 
-        public void RemoveInteractor(Interactor interactor)
+        public void RemoveInteractor(IInteractor interactor)
         {
             Log.DebugFormat("Removing interactor: {0}", interactor);
 
             _interactors.Remove(interactor.Id);
         }
 
-        public void CloseInteractor(Interactor interactor)
+        public void CloseInteractor(IInteractor interactor)
         {
             Log.DebugFormat("Closing interactor: {0}", interactor);
 
             _closedInteractors.OnNext(interactor);
         }
 
-        public void FaultInteractor(Interactor interactor, Exception error)
+        public void FaultInteractor(IInteractor interactor, Exception error)
         {
             Log.DebugFormat("Faulting interactor: {0}", interactor);
 

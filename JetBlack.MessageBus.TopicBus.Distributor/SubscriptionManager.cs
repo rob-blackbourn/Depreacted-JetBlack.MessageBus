@@ -22,7 +22,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _publisherMarshaller = publisherMarshaller;
         }
 
-        public void RequestSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
+        public void RequestSubscription(IInteractor subscriber, SubscriptionRequest subscriptionRequest)
         {
             Log.DebugFormat("Received subscription from {0} on \"{1}\"", subscriber, subscriptionRequest);
 
@@ -34,14 +34,14 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _notificationMarshaller.ForwardSubscription(subscriber, subscriptionRequest);
         }
 
-        public void OnFaultedInteractor(Interactor interactor, Exception error)
+        public void OnFaultedInteractor(IInteractor interactor, Exception error)
         {
             Log.Warn("Interactor faulted: " + interactor, error);
 
             OnClosedInteractor(interactor);
         }
 
-        public void OnClosedInteractor(Interactor interactor)
+        public void OnClosedInteractor(IInteractor interactor)
         {
             Log.DebugFormat("Removing subscriptions for {0}", interactor);
 
@@ -55,7 +55,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 _notificationMarshaller.ForwardSubscription(interactor, subscriptionRequest);
         }
 
-        public void SendUnicastData(Interactor publisher, UnicastData unicastData)
+        public void SendUnicastData(IInteractor publisher, UnicastData unicastData)
         {
             // Are there subscribers for this topic?
             var subscribersForTopic = _repository.GetSubscribersToTopic(unicastData.Topic);
@@ -70,7 +70,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _publisherMarshaller.SendUnicastData(publisher, subscriber, unicastData);
         }
 
-        public void SendMulticastData(Interactor publisher, MulticastData multicastData)
+        public void SendMulticastData(IInteractor publisher, MulticastData multicastData)
         {
             // Are there subscribers for this topic?
             var subscribersForTopic = _repository.GetSubscribersToTopic(multicastData.Topic);
@@ -80,7 +80,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             _publisherMarshaller.SendMulticastData(publisher, subscribersForTopic, multicastData);
         }
 
-        public void OnNewNotificationRequest(Interactor requester, Regex topicRegex)
+        public void OnNewNotificationRequest(IInteractor requester, Regex topicRegex)
         {
             // Find the subscribers whoes subscriptions match the pattern.
             foreach (var matchingSubscriptions in _repository.GetSubscribersMatchingTopic(topicRegex))

@@ -46,12 +46,12 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             get { return _forwardedSubscriptionRequests; }
         }
 
-        public void ForwardSubscription(Interactor subscriber, SubscriptionRequest subscriptionRequest)
+        public void ForwardSubscription(IInteractor subscriber, SubscriptionRequest subscriptionRequest)
         {
             _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(subscriber.Id, subscriptionRequest.Topic, subscriptionRequest.IsAdd));
         }
 
-        public void RequestNotification(Interactor notifiable, NotificationRequest notificationRequest)
+        public void RequestNotification(IInteractor notifiable, NotificationRequest notificationRequest)
         {
             _notificationRequests.OnNext(SourceMessage.Create(notifiable, notificationRequest));
         }

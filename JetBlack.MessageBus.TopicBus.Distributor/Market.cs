@@ -17,7 +17,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
         private readonly NotificationMarshaller _notificationMarshaller;
         private readonly IScheduler _scheduler;
 
-        public Market(IObservable<Interactor> listenerObservable)
+        public Market(IObservable<IInteractor> listenerObservable)
         {
             _interactorManager = new InteractorManager();
             _notificationMarshaller = new NotificationMarshaller(_interactorManager);
@@ -31,7 +31,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 .Subscribe(AddInteractor);
         }
 
-        private void AddInteractor(Interactor interactor)
+        private void AddInteractor(IInteractor interactor)
         {
             Log.DebugFormat("AddInteractor(interactor={0})", interactor);
 
@@ -45,7 +45,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                     () => _interactorManager.CloseInteractor(interactor));
         }
 
-        private void OnMessage(Interactor sender, Message message)
+        private void OnMessage(IInteractor sender, Message message)
         {
             Log.DebugFormat("OnMessage(sender={0}, message={1}", sender, message);
 

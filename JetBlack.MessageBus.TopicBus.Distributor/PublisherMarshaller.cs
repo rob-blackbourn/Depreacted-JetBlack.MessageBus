@@ -39,12 +39,12 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 });
         }
 
-        public void SendUnicastData(Interactor publisher, Interactor subscriber, UnicastData unicastData)
+        public void SendUnicastData(IInteractor publisher, IInteractor subscriber, UnicastData unicastData)
         {
             _sendableUnicastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, unicastData));
         }
 
-        public void SendMulticastData(Interactor publisher, IEnumerable<Interactor> subscribers, MulticastData multicastData)
+        public void SendMulticastData(IInteractor publisher, IEnumerable<IInteractor> subscribers, MulticastData multicastData)
         {
             foreach (var subscriber in subscribers)
                 _sendableMulticastDataMessages.OnNext(SourceSinkMessage.Create(publisher, subscriber, multicastData));

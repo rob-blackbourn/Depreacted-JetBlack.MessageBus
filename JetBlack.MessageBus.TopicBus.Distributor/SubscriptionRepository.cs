@@ -8,22 +8,22 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
     internal class SubscriptionRepository
     {
         // Topic->Interactor->SubscriptionCount.
-        private readonly IDictionary<string, CountedSet<Interactor>> _cache = new Dictionary<string, CountedSet<Interactor>>();
+        private readonly IDictionary<string, CountedSet<IInteractor>> _cache = new Dictionary<string, CountedSet<IInteractor>>();
 
-        public void AddSubscription(Interactor subscriber, string topic)
+        public void AddSubscription(IInteractor subscriber, string topic)
         {
             // Find the list of interactors that have subscribed to this topic.
-            CountedSet<Interactor> subscribersForTopic;
+            CountedSet<IInteractor> subscribersForTopic;
             if (!_cache.TryGetValue(topic, out subscribersForTopic))
-                _cache.Add(topic, new CountedSet<Interactor>(new[] { subscriber }));
+                _cache.Add(topic, new CountedSet<IInteractor>(new[] { subscriber }));
             else
                 subscribersForTopic.Add(subscriber);
         }
 
-        public void RemoveSubscription(Interactor subscriber, string topic, bool removeAll)
+        public void RemoveSubscription(IInteractor subscriber, string topic, bool removeAll)
         {
             // Can we find this topic in the cache?
-            CountedSet<Interactor> subscribersForTopic;
+            CountedSet<IInteractor> subscribersForTopic;
             if (!_cache.TryGetValue(topic, out subscribersForTopic))
                 return;
 
@@ -41,7 +41,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 _cache.Remove(topic);
         }
 
-        public IEnumerable<string> FindTopicsByInteractor(Interactor interactor)
+        public IEnumerable<string> FindTopicsByInteractor(IInteractor interactor)
         {
             return _cache.Where(x => x.Value.Contains(interactor)).Select(x => x.Key);
         }
@@ -51,16 +51,16 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             return _cache.Remove(topic);
         }
 
-        public CountedSet<Interactor> GetSubscribersToTopic(string topic)
+        public CountedSet<IInteractor> GetSubscribersToTopic(string topic)
         {
             // Are there subscribers for this topic?
-            CountedSet<Interactor> subscribersForTopic;
+            CountedSet<IInteractor> subscribersForTopic;
             if (!_cache.TryGetValue(topic, out subscribersForTopic))
                 return null;
             return subscribersForTopic;
         }
 
-        public IEnumerable<KeyValuePair<string, CountedSet<Interactor>>> GetSubscribersMatchingTopic(Regex topicRegex)
+        public IEnumerable<KeyValuePair<string, CountedSet<IInteractor>>> GetSubscribersMatchingTopic(Regex topicRegex)
         {
             return _cache.Where(x => topicRegex.IsMatch(x.Key));
         }
