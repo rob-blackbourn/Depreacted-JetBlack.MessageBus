@@ -2,17 +2,15 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: InternalsVisibleTo("JetBlack.MessageBus.TopicBus.Distributor.Test")]
-
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("JetBlack.MessageBus.TopicBus.Distributor")]
+[assembly: AssemblyTitle("JetBlack.MessageBus.TopicBus.Distributor.Test")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("JetBlack.MessageBus.TopicBus.Distributor")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCompany("Microsoft")]
+[assembly: AssemblyProduct("JetBlack.MessageBus.TopicBus.Distributor.Test")]
+[assembly: AssemblyCopyright("Copyright © Microsoft 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -22,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("629472e7-b375-409a-b5a2-ab742ab994e7")]
+[assembly: Guid("9353e608-8509-4ffa-a216-28ee0d99aeaa")]
 
 // Version information for an assembly consists of the following four values:
 //
