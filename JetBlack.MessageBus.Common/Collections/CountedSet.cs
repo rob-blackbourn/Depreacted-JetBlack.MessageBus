@@ -13,7 +13,11 @@ namespace JetBlack.MessageBus.Common.Collections
                 _cache.Add(value, 1);
         }
 
-        public int Add(T value)
+        public CountedSet()
+        {
+        }
+
+        public int Increment(T value)
         {
             if (_cache.ContainsKey(value))
                 return ++_cache[value];
@@ -22,7 +26,7 @@ namespace JetBlack.MessageBus.Common.Collections
             return 1;
         }
 
-        public int Remove(T value)
+        public int Decrement(T value)
         {
             if (!_cache.ContainsKey(value))
                 throw new KeyNotFoundException();
@@ -33,9 +37,14 @@ namespace JetBlack.MessageBus.Common.Collections
             return count;
         }
 
-        public bool RemoveAll(T value)
+        public bool Delete(T value)
         {
             return _cache.Remove(value);
+        }
+
+        public void Clear()
+        {
+            _cache.Clear();
         }
 
         public bool TryGetCount(T value, out int count)

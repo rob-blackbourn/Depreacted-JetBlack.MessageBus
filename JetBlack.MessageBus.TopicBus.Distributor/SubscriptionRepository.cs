@@ -17,7 +17,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
             if (!_cache.TryGetValue(topic, out subscribersForTopic))
                 _cache.Add(topic, new CountedSet<IInteractor>(new[] { subscriber }));
             else
-                subscribersForTopic.Add(subscriber);
+                subscribersForTopic.Increment(subscriber);
         }
 
         public void RemoveSubscription(IInteractor subscriber, string topic, bool removeAll)
@@ -32,9 +32,9 @@ namespace JetBlack.MessageBus.TopicBus.Distributor
                 return;
 
             if (removeAll)
-                subscribersForTopic.RemoveAll(subscriber);
+                subscribersForTopic.Delete(subscriber);
             else
-                subscribersForTopic.Remove(subscriber);
+                subscribersForTopic.Decrement(subscriber);
 
             // If there are no subscribers left on this topic, remove it from the cache.
             if (subscribersForTopic.Count == 0)
