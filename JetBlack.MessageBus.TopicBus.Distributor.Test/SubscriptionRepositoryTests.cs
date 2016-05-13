@@ -11,7 +11,7 @@ namespace JetBlack.MessageBus.TopicBus.Distributor.Test
         {
             var repository = new SubscriptionRepository();
 
-            var interactor = new MockInteractor(1, null, null);
+            var interactor = new MockInteractor(1, null, null, null);
 
             const string topic = "foo";
             repository.AddSubscription(interactor, topic);
