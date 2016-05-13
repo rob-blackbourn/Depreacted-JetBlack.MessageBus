@@ -57,24 +57,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ForwardedSubscriptionRequest.cs" />
-    <Compile Include="Message.cs" />
-    <Compile Include="MessageExtensions.cs" />
-    <Compile Include="MessageType.cs" />
-    <Compile Include="MulticastData.cs" />
-    <Compile Include="NotificationRequest.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SubscriptionRequest.cs" />
-    <Compile Include="UnicastData.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\JetBlack.MessageBus.Common\JetBlack.MessageBus.Common.csproj">
       <Project>{8a5a252a-d66c-498f-8dfd-fd65c4f74d69}</Project>
       <Name>JetBlack.MessageBus.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
