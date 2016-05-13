@@ -50,10 +50,10 @@ namespace JetBlack.MessageBus.TopicBus.Adapters
             switch (message.MessageType)
             {
                 case MessageType.MulticastData:
-                    RaiseOnData(((MulticastData)message).Topic, ((MulticastData)message).Data, false);
+                    RaiseOnData(((MulticastData)message).Topic, ((MulticastData)message).Data, ((MulticastData)message).IsImage);
                     break;
                 case MessageType.UnicastData:
-                    RaiseOnData(((UnicastData)message).Topic, ((UnicastData)message).Data, true);
+                    RaiseOnData(((UnicastData)message).Topic, ((UnicastData)message).Data, ((UnicastData)message).IsImage);
                     break;
                 case MessageType.ForwardedSubscriptionRequest:
                     RaiseOnForwardedSubscriptionRequest((ForwardedSubscriptionRequest)message);
