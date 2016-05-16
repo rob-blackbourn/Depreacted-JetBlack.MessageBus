@@ -2,6 +2,7 @@
 using System.Reactive.Subjects;
 using log4net;
 using JetBlack.MessageBus.FeedBus.Messages;
+using JetBlack.MessageBus.FeedBus.Distributor.Config;
 
 namespace JetBlack.MessageBus.FeedBus.Distributor
 {
@@ -32,6 +33,12 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
         public void RequestNotification(IInteractor notifiable, NotificationRequest notificationRequest)
         {
             Log.DebugFormat("Handling notification request for {0} on {1}", notifiable, notificationRequest);
+
+            if (!notifiable.HasRole(notificationRequest.Feed, ClientRole.Notify))
+            {
+                Log.WarnFormat("Notification request denied for client \"{0}\" on feed \"{1}\"", notifiable, notificationRequest.Feed);
+                return;
+            }
 
             if (notificationRequest.IsAdd)
                 _repository.AddRequest(notifiable, notificationRequest.Feed, _newNotificationRequests);

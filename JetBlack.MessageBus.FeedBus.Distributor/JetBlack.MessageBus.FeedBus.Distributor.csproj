@@ -35,6 +35,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
@@ -62,7 +63,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Acceptor.cs" />
+    <Compile Include="Config\ClientConfig.cs" />
+    <Compile Include="Config\ClientRole.cs" />
+    <Compile Include="Config\ConfigurationSectionHandler.cs" />
+    <Compile Include="Config\DistributorConfig.cs" />
     <Compile Include="FeedAndTopic.cs" />
+    <Compile Include="Config\FeedConfig.cs" />
     <Compile Include="IInteractor.cs" />
     <Compile Include="Interactor.cs" />
     <Compile Include="InteractorManager.cs" />
@@ -70,6 +76,7 @@
     <Compile Include="NotificationManager.cs" />
     <Compile Include="NotificationMarshaller.cs" />
     <Compile Include="NotificationRepository.cs" />
+    <Compile Include="PermissionManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PublisherManager.cs" />
     <Compile Include="PublisherMarshaller.cs" />

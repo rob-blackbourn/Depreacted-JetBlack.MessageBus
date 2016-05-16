@@ -2,6 +2,7 @@
 using System.Net;
 using System.ServiceModel.Channels;
 using log4net;
+using JetBlack.MessageBus.FeedBus.Distributor.Config;
 
 namespace JetBlack.MessageBus.FeedBus.Distributor
 {
@@ -11,10 +12,10 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 
         private readonly Market _market;
 
-        public Server(IPEndPoint serverEndPoint, BufferManager bufferManager)
+        public Server(IPEndPoint serverEndPoint, BufferManager bufferManager, DistributorConfig config)
         {
             Log.Info("Starting server");
-            _market = new Market(new Acceptor(bufferManager).ToObservable(serverEndPoint));
+            _market = new Market(new Acceptor(bufferManager, config).ToObservable(serverEndPoint));
         }
 
         public void Dispose()

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using log4net;
 using JetBlack.MessageBus.FeedBus.Messages;
+using JetBlack.MessageBus.FeedBus.Distributor.Config;
 
 namespace JetBlack.MessageBus.FeedBus.Distributor
 {
@@ -24,6 +25,12 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
         public void RequestSubscription(IInteractor subscriber, SubscriptionRequest subscriptionRequest)
         {
             Log.DebugFormat("Received subscription from {0} on \"{1}\"", subscriber, subscriptionRequest);
+
+            if (!subscriber.HasRole(subscriptionRequest.Feed, ClientRole.Subscribe))
+            {
+                Log.WarnFormat("Subscription denied for client \"{0}\" on feed \"{1}\"", subscriber, subscriptionRequest.Feed);
+                return;
+            }
 
             if (subscriptionRequest.IsAdd)
                 _repository.AddSubscription(subscriber, subscriptionRequest.Feed, subscriptionRequest.Topic);

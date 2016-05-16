@@ -7,6 +7,7 @@ using System.ServiceModel.Channels;
 using System.Threading.Tasks;
 using log4net;
 using JetBlack.MessageBus.Common.Network;
+using JetBlack.MessageBus.FeedBus.Distributor.Config;
 
 namespace JetBlack.MessageBus.FeedBus.Distributor
 {
@@ -16,10 +17,12 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 
         private int _nextId;
         private readonly BufferManager _bufferManager;
+        private readonly DistributorConfig _config;
 
-        public Acceptor(BufferManager bufferManager)
+        public Acceptor(BufferManager bufferManager, DistributorConfig config)
         {
             _bufferManager = bufferManager;
+            _config = config;
         }
 
         public IObservable<IInteractor> ToObservable(IPEndPoint endpoint)
@@ -34,7 +37,7 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
         {
             try
             {
-                var interactor = await Interactor.Create(tcpClient, _nextId++, _bufferManager);
+                var interactor = await Interactor.Create(tcpClient, _nextId++, _bufferManager, _config);
                 observer.OnNext(interactor);
             }
             catch (Exception error)

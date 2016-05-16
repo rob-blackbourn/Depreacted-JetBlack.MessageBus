@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using BufferManager = System.ServiceModel.Channels.BufferManager;
 using JetBlack.MessageBus.FeedBus.Messages;
+using JetBlack.MessageBus.FeedBus.Distributor.Config;
 
 namespace JetBlack.MessageBus.FeedBus.Distributor
 {
@@ -14,15 +15,16 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
         private readonly Stream _stream;
         private readonly BufferManager _bufferManager;
         private readonly IObserver<Message> _messageObserver;
+        private readonly PermissionManager _permissionManager;
 
-        public static async Task<Interactor> Create(TcpClient tcpClient, int id, BufferManager bufferManager)
+        public static async Task<Interactor> Create(TcpClient tcpClient, int id, BufferManager bufferManager, DistributorConfig config)
         {
             var stream = new NegotiateStream(tcpClient.GetStream());
             await stream.AuthenticateAsServerAsync();
-            return new Interactor(stream, id, stream.RemoteIdentity.Name, ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address, bufferManager);
+            return new Interactor(stream, id, stream.RemoteIdentity.Name, ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address, bufferManager, config);
         }
 
-        private Interactor(Stream stream, int id, string name, IPAddress ipAddress, BufferManager bufferManager)
+        private Interactor(Stream stream, int id, string name, IPAddress ipAddress, BufferManager bufferManager, DistributorConfig config)
         {
             _stream = stream;
             Id = id;
@@ -31,12 +33,19 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
             Name = name;
             IPAddress = ipAddress;
 
+            _permissionManager = new PermissionManager(config, ipAddress, name);
+
             _messageObserver = stream.ToMessageObserver(_bufferManager);
         }
 
         public IObservable<Message> ToObservable()
         {
             return _stream.ToMessageObservable(_bufferManager);
+        }
+
+        public bool HasRole(string feed, ClientRole role)
+        {
+            return _permissionManager.HasRole(feed, role);
         }
 
         public void SendMessage(Message message)

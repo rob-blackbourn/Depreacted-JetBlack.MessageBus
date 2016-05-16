@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reactive.Subjects;
 using log4net;
 using JetBlack.MessageBus.FeedBus.Messages;
+using JetBlack.MessageBus.FeedBus.Distributor.Config;
 
 namespace JetBlack.MessageBus.FeedBus.Distributor
 {
@@ -21,12 +22,24 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 
         public void SendMulticastData(IInteractor publisher, MulticastData multicastData, IInteractor subscriber)
         {
+            if (!publisher.HasRole(multicastData.Feed, ClientRole.Publish))
+            {
+                Log.WarnFormat("Publish change request denied for client \"{0}\" on feed \"{1}\" with topic \"{2}\"", publisher, multicastData.Feed, multicastData.Topic);
+                return;
+            }
+
             _repository.AddPublisher(publisher, multicastData.Feed, multicastData.Topic);
             subscriber.SendMessage(multicastData);
         }
 
         public void SendUnicastData(IInteractor publisher, UnicastData unicastData, IInteractor subscriber)
         {
+            if (!publisher.HasRole(unicastData.Feed, ClientRole.Publish))
+            {
+                Log.WarnFormat("Publish change request denied for client \"{0}\" on feed \"{1}\" with topic \"{2}\"", publisher, unicastData.Feed, unicastData.Topic);
+                return;
+            }
+
             _repository.AddPublisher(publisher, unicastData.Feed, unicastData.Topic);
             subscriber.SendMessage(unicastData);
         }
