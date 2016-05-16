@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Text.RegularExpressions;
 using log4net;
 using JetBlack.MessageBus.FeedBus.Messages;
 
@@ -91,12 +90,14 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
             }
         }
 
-        public void OnStaleTopics(IEnumerable<KeyValuePair<string,string>> staleFeedsAndTopics)
+        // TODO: This should only need feed.
+        public void OnStaleTopics(IEnumerable<FeedAndTopic> staleFeedsAndTopics)
         {
             foreach (var staleFeedAndTopic in staleFeedsAndTopics)
-                OnStaleTopic(staleFeedAndTopic.Key, staleFeedAndTopic.Value);
+                OnStaleTopic(staleFeedAndTopic.Feed, staleFeedAndTopic.Topic);
         }
 
+        // TODO: This should only need feed.
         private void OnStaleTopic(string staleFeed, string staleTopic)
         {
             var subscribersForTopic = _repository.GetSubscribersToTopic(staleFeed, staleTopic);

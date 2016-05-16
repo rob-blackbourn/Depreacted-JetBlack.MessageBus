@@ -20,7 +20,7 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 
         private readonly IDisposable _disposable;
 
-        public IObservable<SourceMessage<IEnumerable<KeyValuePair<string,string>>>> StalePublishers
+        public IObservable<SourceMessage<IEnumerable<FeedAndTopic>>> StalePublishers
         {
             get { return _publisherManager.StalePublishers; }
         }

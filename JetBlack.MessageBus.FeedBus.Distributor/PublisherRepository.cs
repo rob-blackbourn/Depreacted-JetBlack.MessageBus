@@ -5,14 +5,14 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 {
     internal class PublisherRepository
     {
-        private readonly TwoWaySet<KeyValuePair<string,string>, IInteractor> _topicsAndPublishers = new TwoWaySet<KeyValuePair<string, string>, IInteractor>();
+        private readonly TwoWaySet<FeedAndTopic, IInteractor> _topicsAndPublishers = new TwoWaySet<FeedAndTopic, IInteractor>();
 
         public void AddPublisher(IInteractor publisher, string feed, string topic)
         {
-            _topicsAndPublishers.Add(publisher, KeyValuePair.Create(feed, topic));
+            _topicsAndPublishers.Add(publisher, new FeedAndTopic(feed, topic));
         }
 
-        public IEnumerable<KeyValuePair<string,string>> RemovePublisher(IInteractor publisher)
+        public IEnumerable<FeedAndTopic> RemovePublisher(IInteractor publisher)
         {
             return _topicsAndPublishers.Remove(publisher);
         }

@@ -11,9 +11,10 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         private readonly PublisherRepository _repository = new PublisherRepository();
-        private readonly ISubject<SourceMessage<IEnumerable<KeyValuePair<string, string>>>> _stalePublishers = new Subject<SourceMessage<IEnumerable<KeyValuePair<string,string>>>>();
+        private readonly ISubject<SourceMessage<IEnumerable<FeedAndTopic>>> _stalePublishers = new Subject<SourceMessage<IEnumerable<FeedAndTopic>>>();
 
-        public IObservable<SourceMessage<IEnumerable<KeyValuePair<string, string>>>> StalePublishers
+        // TODO: This should just be by feed.
+        public IObservable<SourceMessage<IEnumerable<FeedAndTopic>>> StalePublishers
         {
             get { return _stalePublishers; }
         }
