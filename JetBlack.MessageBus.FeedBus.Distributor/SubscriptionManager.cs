@@ -87,7 +87,7 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
             {
                 // Tell the requestor about subscribers that are interested in this topic.
                 foreach (var subscriber in matchingSubscriptions.Value)
-                    requester.SendMessage(new ForwardedSubscriptionRequest(subscriber.Id, subscriber.LocalEndPoint.Address, subscriber.Name, feed, matchingSubscriptions.Key, true));
+                    requester.SendMessage(new ForwardedSubscriptionRequest(subscriber.Id, subscriber.IPAddress, subscriber.Name, feed, matchingSubscriptions.Key, true));
             }
         }
 

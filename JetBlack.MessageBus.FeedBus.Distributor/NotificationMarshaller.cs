@@ -48,7 +48,7 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 
         public void ForwardSubscription(IInteractor subscriber, SubscriptionRequest subscriptionRequest)
         {
-            _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(subscriber.Id, subscriber.LocalEndPoint.Address, subscriber.Name, subscriptionRequest.Feed, subscriptionRequest.Topic, subscriptionRequest.IsAdd));
+            _forwardedSubscriptionRequests.OnNext(new ForwardedSubscriptionRequest(subscriber.Id, subscriber.IPAddress, subscriber.Name, subscriptionRequest.Feed, subscriptionRequest.Topic, subscriptionRequest.IsAdd));
         }
 
         public void RequestNotification(IInteractor notifiable, NotificationRequest notificationRequest)

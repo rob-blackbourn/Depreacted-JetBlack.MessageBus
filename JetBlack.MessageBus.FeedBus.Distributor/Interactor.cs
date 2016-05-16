@@ -19,18 +19,17 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
         {
             var stream = new NegotiateStream(tcpClient.GetStream());
             await stream.AuthenticateAsServerAsync();
-            return new Interactor(stream, id, stream.RemoteIdentity.Name, (IPEndPoint)tcpClient.Client.LocalEndPoint, (IPEndPoint)tcpClient.Client.RemoteEndPoint, bufferManager);
+            return new Interactor(stream, id, stream.RemoteIdentity.Name, ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address, bufferManager);
         }
 
-        private Interactor(Stream stream, int id, string name, IPEndPoint localEndPoint, IPEndPoint remoteEndpoint, BufferManager bufferManager)
+        private Interactor(Stream stream, int id, string name, IPAddress ipAddress, BufferManager bufferManager)
         {
             _stream = stream;
             Id = id;
             _bufferManager = bufferManager;
 
             Name = name;
-            LocalEndPoint = localEndPoint;
-            RemoteEndPoint = remoteEndpoint;
+            IPAddress = ipAddress;
 
             _messageObserver = stream.ToMessageObserver(_bufferManager);
         }
@@ -47,12 +46,11 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
 
         public int Id { get; private set; }
         public string Name { get; private set; }
-        public IPEndPoint LocalEndPoint { get; private set; }
-        public IPEndPoint RemoteEndPoint { get; private set; }
+        public IPAddress IPAddress { get; private set; }
 
         public override string ToString()
         {
-            return string.Format("{0}/{1}", Id, RemoteEndPoint);
+            return string.Format("{0}/{1}", Id, IPAddress);
         }
 
         public override bool Equals(object obj)

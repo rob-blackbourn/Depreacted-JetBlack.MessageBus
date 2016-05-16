@@ -8,9 +8,7 @@ namespace JetBlack.MessageBus.FeedBus.Distributor
     {
         int Id { get; }
         string Name { get; }
-        // Simplify end points to addresses.
-        IPEndPoint LocalEndPoint { get; }
-        IPEndPoint RemoteEndPoint { get; }
+        IPAddress IPAddress { get; }
 
         IObservable<Message> ToObservable();
         void SendMessage(Message message);
